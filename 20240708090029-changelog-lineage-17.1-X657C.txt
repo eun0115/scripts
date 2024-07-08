@@ -1,0 +1,16 @@
+--- Changelogs ---
+More Cleanups
+Adjusted overall device paddings and overlays
+Remove old configuration and use new config for MMTEL/RCS
+Build libldacBT_dec
+Optimize ART
+use less system partition size
+Enable ZRAM-writeback job
+Disable NearbyMessagingService & DiscoveryService
+Switch to AVC 3.1 for screen recording
+Compact cached app heaps in the background
+Enabled config_sf_limitedAlpha
+enabled config_ui_enableFadingMarquee
+configured SQLite to operate in MEMORY mode
+Address denials for enforcing
+misc here and there
