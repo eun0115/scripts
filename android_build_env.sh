@@ -14,6 +14,7 @@ DEBIAN_11_PACKAGES="libncurses5-dev"
 PACKAGES=""
 
 sudo apt install software-properties-common -y
+sudo apt-get install libssl-dev -y
 sudo apt update
 
 # Install lsb-base packages
