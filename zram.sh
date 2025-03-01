@@ -2,7 +2,7 @@ sudo apt install zram-config
 sudo sed -e '/swap/ s/^#*/#/' -i /etc/fstab
 sudo echo "zram" >> /etc/modules-load.d/zram.conf
 sudo echo "options zram num_devices=1" >> /etc/modprobe.d/zram.conf
-sudo echo '''KERNEL=="zram0", ATTR{disksize}="32768M",TAG+="systemd"''' >> /etc/udev/rules.d/99-zram.rules
+sudo echo '''KERNEL=="zram0", ATTR{disksize}="65536M",TAG+="systemd"''' >> /etc/udev/rules.d/99-zram.rules
 sudo echo '''
 [Unit]
 Description=Swap with zram
