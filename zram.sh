@@ -31,6 +31,9 @@ echo "zram" | sudo tee /etc/modules-load.d/zram.conf
 echo "options zram num_devices=1" | sudo tee /etc/modprobe.d/zram.conf
 echo 'KERNEL=="zram0", ATTR{disksize}="65536M", TAG+="systemd"' | sudo tee /etc/udev/rules.d/99-zram.rules
 
+# Set ZRAM size (in MB)
+ZRAM_SIZE="65536M"  # 60 GB swap, adjust as needed
+
 # Debian-based: create manual systemd unit
 if [ "$DISTRO" = "debian" ]; then
     echo "[INFO] Creating zram.service for Debian..."
@@ -51,6 +54,7 @@ ExecStop=/sbin/swapoff /dev/zram0
 WantedBy=multi-user.target
 EOF
 
+    # Enable and start zram service
     sudo systemctl daemon-reload
     sudo systemctl enable --now zram.service
 
@@ -60,7 +64,7 @@ else
     sudo mkdir -p /etc/systemd/zram-generator.conf.d
     sudo tee /etc/systemd/zram-generator.conf.d/zram.conf > /dev/null <<EOF
 [zram0]
-zram-size = 65536M
+zram-size = $ZRAM_SIZE
 compression-algorithm = zstd
 swap-priority = 32767
 EOF
