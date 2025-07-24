@@ -1,0 +1,3772 @@
+From 11ec09320724e3209710bc77df49fdc7e02ad00b Mon Sep 17 00:00:00 2001
+From: LuK1337 <priv.luk@gmail.com>
+Date: Fri, 24 Nov 2023 18:36:08 +0100
+Subject: [PATCH] treewide: AOSP fixes
+
+usb: gadget: RIP Samsung MTP driver
+
+* It simply doesn't work on AOSP, and never did.
+
+Change-Id: Id42c091d45965037eca200041cd00de5ada8d275
+
+input: touchscreen: sec_ts: Invert reported proximity values
+
+* On stock higher value indicates closer proximity while on AOSP it is expected to be the other way around
+
+Change-Id: Ib27d408f5e45dbd42b61bc37f0f3ef30e28157b9
+
+drm: msm: sde: translate zpos property to fod property
+
+Change-Id: I562e6738cd0b09e67b91a0d697d045c2f3984798
+
+uapi: sde_drm: Define FOD_PRESSED_LAYER_ZORDER
+
+Change-Id: I38638b97ec54d6c00f30fa77c51f19d141d43738
+
+drm/msm/sde: Do not limit maximum for zpos property
+
+We are going to use special high values for zpos property to map
+them to fod property values. Allow userspace to pass such high
+values.
+
+Change-Id: I8cdb86f73337c2d929047f84712de02a960167ab
+
+drm: sde: Increase sde stage to map zpos changes
+
+* Another stage should be added, otherwise fingerprint payment won't work in some apps like Alipay and Jingdong.
+
+Change-Id: I0dd347a9599ec45b129b8483051ad134ed6bc86c
+
+drm: msm: dsi-staging: create empty attributes group
+
+Change-Id: I9fe21356804e1fbd589cf4c155a722ad2ba8bcc8
+
+drm: msm: dsi-staging: add get_main_display
+
+Change-Id: I0e330858faea435bfa1c729b76fb1419ff791337
+
+drm: msm: dsi-staging: add dsi_panel_get_backlight
+
+Change-Id: I11a5408e2df139a056674d7db3de6c8e00fdbf69
+
+drm: msm: implement fod handling
+
+Change-Id: I30f1ebd041c429deccc64da2dcef34df9b3902c3
+
+drm: msm: make Samsung HBM work
+
+On stock ROM Samsung writes the brightness value for the finger mask to /sys/class/lcd/panel/mask_brightness and then turns on the mask layer. However we don't know how they actually turn it on. Therefore enable/disable the finger mask every time we write something to mask_brightness.
+
+Change-Id: I60cba88324c93e41275b1bd0c7885a1715517ae5
+
+drm: msm: dsi-staging: Update FOD dim lut table
+
+Change-Id: Ic4e247affbb88e1cf257868105730e16a72be85b
+
+input: keyboard: hall_ic: Report SW_LID instead of SW_FLIP
+
+* Android expects SW_LID for lid events.
+
+Change-Id: I70a77d6ce78da2b800eb5188428fa2697e0228d7
+
+drivers: input: touchscreen: sec_ts: Add sysfs to track FOD
+
+* pressed state /sys/class/sec/tsp/input/fod_pressed 0 -> not pressed 1 ->
+ pressed.
+
+Change-Id: I84eb8d990c3368f48f7f07d4a36b99c7601e5a8f
+
+drm: msm: Properly dim the screen for HBM
+
+This reverts commit 9428b78318615b4fff623c30a97fb694b6a9a77d.
+
+Change-Id: If53b8eaff0291e36c869a676758ba385b894ac89
+
+drm: msm: translate PCC to CSC
+
+PCC cannot be applied per-plane, but CSC can. Translate PCC to CSC
+to allow skipping it for some planes.
+
+Change-Id: Icd8c7e528e260265a79129fd845004226e8cfdde
+
+drm: msm: fix -Wincompatible-pointer-types error
+
+../drivers/gpu/drm/msm/sde/sde_color_processing.c:892:9: error: incompatible pointer types returning 'unsigned char *' from a function with result type 'struct drm_msm_pcc *' [-Werror,-Wincompatible-pointer-types] return blob ? blob->data : NULL; ^~~~~~~~ 1 error generated.
+
+Change-Id: I489d359ca49b59696f29f3d9615c5f275748719f
+
+drm: msm: skip marking null blob changes as dirty
+
+Change-Id: I69b8ba87b0428c36d08a76326f8dbb2c087da65a
+
+drm: msm: optimize exclusion rects dirty marking
+
+Change-Id: I0b0058c67a90a7eeb672813bd79a14080233a090
+
+drm: msm: do not create virtual planes for VIG planes
+
+Multirect virtual planes have an issue with CSC causing apparent
+non-CSC flashes.
+Without smart DMA, SDE doesn't register any multirect virtual planes.
+This is a very hacky solution, that might cause some performance
+defficits.
+
+Change-Id: I00a87e4c211bdc9915c6124b527a32b8a3066445
+
+drm: msm: ignore CSC config on FOD layer
+
+FOD performance decreases if the color of the icon is not
+exactly white, which happens when night light is enabled.
+Skip CSC for the FOD layer.
+
+Change-Id: I0c1bff985879bfab325c648c98e7a50679107833
+
+battery: common: remove sec_vote calls
+
+* They aren't neccessary for starting/stopping charging using batt_slate_mode and break the flashlight when slate mode is enabled.
+
+Change-Id: I083a8371cc82c2ac9bce88bcc183dfee0975cf20
+
+drm: msm: enable HBM alongside dimming
+
+Change-Id: I000030bef5256423ff5e77bbcee177e1c1694123
+
+input: touchscreen: sec_ts: Don't report KEY_BLACK_UI_GESTURE on FOD events
+
+Change-Id: If7430d0fefc3d40464b7b1131f9ee6d49d4f7d69
+
+input: touchscreen: sec_ts: enable pressure reporting
+
+Bug: 74216515
+Change-Id: I8894e8dbcb586f0f45782d97c8657f07b64d1abe
+
+drivers: drm: msm: reset finger mask state on screen off
+
+Change-Id: I943328edf0e946a988865edeb037968a45fe947f
+
+drivers: leds: maxing out the flashlight brightness
+- torch have low brightness which is in flashlight_current[0], changing it to flashlight_current[4] and make the current match in dts
+- the flash in camera use full brightness hence it doesnt affect in any ways
+
+Signed-off-by: eun0115 <gianpaoloestacio5@gmail.com>
+---
+ drivers/battery/common/sec_battery_sysfs.c    |    5 -
+ drivers/gpu/drm/msm/dsi-staging/dsi_display.c |   20 +
+ drivers/gpu/drm/msm/dsi-staging/dsi_display.h |    2 +
+ drivers/gpu/drm/msm/dsi-staging/dsi_panel.c   |   66 +-
+ drivers/gpu/drm/msm/dsi-staging/dsi_panel.h   |   15 +
+ drivers/gpu/drm/msm/msm_drv.h                 |    1 +
+ drivers/gpu/drm/msm/msm_prop.c                |   19 +-
+ .../gpu/drm/msm/samsung/ss_dsi_panel_common.c |    6 +
+ .../gpu/drm/msm/samsung/ss_dsi_panel_sysfs.c  |    9 +
+ .../gpu/drm/msm/sde/sde_color_processing.c    |   25 +
+ .../gpu/drm/msm/sde/sde_color_processing.h    |    3 +
+ drivers/gpu/drm/msm/sde/sde_connector.c       |   12 +-
+ drivers/gpu/drm/msm/sde/sde_crtc.c            |  109 +
+ drivers/gpu/drm/msm/sde/sde_crtc.h            |    1 +
+ drivers/gpu/drm/msm/sde/sde_hw_catalog.h      |    6 +-
+ drivers/gpu/drm/msm/sde/sde_hw_mdss.h         |    1 +
+ drivers/gpu/drm/msm/sde/sde_hw_sspp.c         |   34 +-
+ drivers/gpu/drm/msm/sde/sde_hw_sspp.h         |    3 +-
+ drivers/gpu/drm/msm/sde/sde_plane.c           |  264 +-
+ drivers/gpu/drm/msm/sde/sde_plane.h           |    2 +
+ drivers/input/keyboard/hall_ic.c              |    8 +-
+ .../input/touchscreen/sec_ts/y771/sec_ts.c    |   38 +-
+ .../input/touchscreen/sec_ts/y771/sec_ts.h    |    2 +
+ drivers/leds/leds-s2mu106.c                   |   35 +-
+ drivers/usb/gadget/function/Makefile          |    5 -
+ drivers/usb/gadget/function/f_mtp_samsung.c   | 2143 -----------------
+ include/uapi/drm/sde_drm.h                    |    5 +
+ 27 files changed, 571 insertions(+), 2268 deletions(-)
+ delete mode 100644 drivers/usb/gadget/function/f_mtp_samsung.c
+
+diff --git a/drivers/battery/common/sec_battery_sysfs.c b/drivers/battery/common/sec_battery_sysfs.c
+index 5a32d37ff334..d2f0e09fcadb 100644
+--- a/drivers/battery/common/sec_battery_sysfs.c
++++ b/drivers/battery/common/sec_battery_sysfs.c
+@@ -1893,17 +1893,12 @@ ssize_t sec_bat_store_attrs(
+ 				sec_bat_set_current_event(battery,
+ 						SEC_BAT_CURRENT_EVENT_SLATE,
+ 						SEC_BAT_CURRENT_EVENT_SLATE);
+-				sec_vote(battery->chgen_vote, VOTER_SLATE,
+-						true,
+-						SEC_BAT_CHG_MODE_BUCK_OFF);
+ 				dev_info(battery->dev,
+ 					"%s: enable slate mode : %d\n",
+ 					__func__, x);
+ 			} else if (x == 0) {
+ 				sec_bat_set_current_event(battery, 0,
+ 						SEC_BAT_CURRENT_EVENT_SLATE);
+-				sec_vote(battery->chgen_vote, VOTER_SLATE,
+-					false, 0);
+ 				dev_info(battery->dev,
+ 					"%s: disable slate mode : %d\n",
+ 					__func__, x);
+diff --git a/drivers/gpu/drm/msm/dsi-staging/dsi_display.c b/drivers/gpu/drm/msm/dsi-staging/dsi_display.c
+index d4f119e8ba55..378528232c77 100644
+--- a/drivers/gpu/drm/msm/dsi-staging/dsi_display.c
++++ b/drivers/gpu/drm/msm/dsi-staging/dsi_display.c
+@@ -73,6 +73,8 @@ static const struct of_device_id dsi_display_dt_match[] = {
+ 	{}
+ };
+ 
++struct dsi_display *primary_display;
++
+ static void dsi_display_mask_ctrl_error_interrupts(struct dsi_display *display,
+ 			u32 mask, bool enable)
+ {
+@@ -5402,11 +5404,22 @@ static int dsi_display_validate_split_link(struct dsi_display *display)
+ 	return rc;
+ }
+ 
++static struct attribute *display_fs_attrs[] = {
++	NULL,
++};
++static struct attribute_group display_fs_attrs_group = {
++	.attrs = display_fs_attrs,
++};
++
+ static int dsi_display_sysfs_init(struct dsi_display *display)
+ {
+ 	int rc = 0;
+ 	struct device *dev = &display->pdev->dev;
+ 
++	rc = sysfs_create_group(&dev->kobj, &display_fs_attrs_group);
++	if (rc)
++		pr_err("failed to create display device attributes");
++
+ #if defined(CONFIG_DISPLAY_SAMSUNG)
+ 	/* In case of vidoe mode panel, dynamic mipi clock feature is required for the noise test.
+ 	 * HW team keep requesting test binary changing mipi clock...
+@@ -5430,6 +5443,8 @@ static int dsi_display_sysfs_deinit(struct dsi_display *display)
+ 		sysfs_remove_group(&dev->kobj,
+ 			&dynamic_dsi_clock_fs_attrs_group);
+ 
++	sysfs_remove_group(&dev->kobj, &display_fs_attrs_group);
++
+ 	return 0;
+ 
+ }
+@@ -6790,6 +6805,7 @@ int dsi_display_get_modes(struct dsi_display *display,
+ exit:
+ 	*out_modes = display->modes;
+ 	rc = 0;
++	primary_display = display;
+ 
+ error:
+ 	if (rc)
+@@ -8442,6 +8458,10 @@ int dsi_display_unprepare(struct dsi_display *display)
+ 	return rc;
+ }
+ 
++struct dsi_display *get_main_display(void) {
++	return primary_display;
++}
++
+ static int __init dsi_display_register(void)
+ {
+ 	dsi_phy_drv_register();
+diff --git a/drivers/gpu/drm/msm/dsi-staging/dsi_display.h b/drivers/gpu/drm/msm/dsi-staging/dsi_display.h
+index 8fe696f86ed1..f08be62729a9 100644
+--- a/drivers/gpu/drm/msm/dsi-staging/dsi_display.h
++++ b/drivers/gpu/drm/msm/dsi-staging/dsi_display.h
+@@ -712,6 +712,8 @@ int dsi_display_cont_splash_config(void *display);
+ int dsi_display_get_panel_vfp(void *display,
+ 	int h_active, int v_active);
+ 
++struct dsi_display *get_main_display(void);
++
+ #if defined(CONFIG_DISPLAY_SAMSUNG_LEGO)
+ int dsi_display_ctrl_init(struct dsi_display *display);
+ int dsi_display_ctrl_deinit(struct dsi_display *display);
+diff --git a/drivers/gpu/drm/msm/dsi-staging/dsi_panel.c b/drivers/gpu/drm/msm/dsi-staging/dsi_panel.c
+index 4ec7e8b2bc87..84541df8829b 100644
+--- a/drivers/gpu/drm/msm/dsi-staging/dsi_panel.c
++++ b/drivers/gpu/drm/msm/dsi-staging/dsi_panel.c
+@@ -51,6 +51,38 @@
+ #define DEFAULT_PANEL_PREFILL_LINES	25
+ #define TICKS_IN_MICRO_SECOND		1000000
+ 
++struct bda {
++    u32 brightness;
++    u32 dim_alpha;
++};
++
++struct bda fod_dim_lut[] = {
++	{0, 0xFF},
++	{1, 0xEC},
++	{2, 0xE6},
++	{3, 0xE0},
++	{4, 0xDC},
++	{6, 0xD5},
++	{10, 0xCA},
++	{20, 0xB7},
++	{21, 0xB5},
++	{30, 0xA8},
++	{42, 0x9A},
++	{63, 0x85},
++	{84, 0x74},
++	{105, 0x65},
++	{126, 0x58},
++	{147, 0x4C},
++	{168, 0x40},
++	{189, 0x36},
++	{210, 0x2C},
++	{231, 0x23},
++	{252, 0x1A},
++	{273, 0x11},
++	{294, 0x9},
++	{315, 0x1},
++};
++
+ enum dsi_dsc_ratio_type {
+ 	DSC_8BPC_8BPP,
+ 	DSC_10BPC_8BPP,
+@@ -1062,6 +1094,39 @@ static int dsi_panel_update_pwm_backlight(struct dsi_panel *panel,
+ 	return rc;
+ }
+ 
++static u32 dsi_panel_get_backlight(struct dsi_panel *panel)
++{
++	return panel->bl_config.bl_level;
++}
++
++static u32 interpolate(uint32_t x, uint32_t xa, uint32_t xb, uint32_t ya, uint32_t yb)
++{
++	return ya - (ya - yb) * (x - xa) / (xb - xa);
++}
++
++u32 dsi_panel_get_fod_dim_alpha(struct dsi_panel *panel)
++{
++	u32 brightness = dsi_panel_get_backlight(panel);
++	int len = ARRAY_SIZE(fod_dim_lut);
++	int i;
++
++	for (i = 0; i < len; i++)
++		if (fod_dim_lut[i].brightness >= brightness)
++			break;
++
++	if (i == 0)
++		return fod_dim_lut[i].dim_alpha;
++
++	if (i == len)
++		return fod_dim_lut[i - 1].dim_alpha;
++
++	return interpolate(brightness,
++			   fod_dim_lut[i - 1].brightness,
++			   fod_dim_lut[i].brightness,
++			   fod_dim_lut[i - 1].dim_alpha,
++			   fod_dim_lut[i].dim_alpha);
++}
++
+ int dsi_panel_set_backlight(struct dsi_panel *panel, u32 bl_lvl)
+ {
+ 	int rc = 0;
+@@ -1070,7 +1135,6 @@ int dsi_panel_set_backlight(struct dsi_panel *panel, u32 bl_lvl)
+ 	if (panel->host_config.ext_bridge_num)
+ 		return 0;
+ 
+-	pr_debug("backlight type:%d lvl:%d\n", bl->type, bl_lvl);
+ 	switch (bl->type) {
+ 	case DSI_BACKLIGHT_WLED:
+ 		rc = backlight_device_set_brightness(bl->raw_bd, bl_lvl);
+diff --git a/drivers/gpu/drm/msm/dsi-staging/dsi_panel.h b/drivers/gpu/drm/msm/dsi-staging/dsi_panel.h
+index 02cb37bbf646..0e76b8380514 100644
+--- a/drivers/gpu/drm/msm/dsi-staging/dsi_panel.h
++++ b/drivers/gpu/drm/msm/dsi-staging/dsi_panel.h
+@@ -118,6 +118,8 @@ struct dsi_backlight_config {
+ 	u32 bl_level;
+ 	u32 bl_scale;
+ 	u32 bl_scale_ad;
++	u32 bl_doze_lpm;
++	u32 bl_doze_hbm;
+ 
+ 	int en_gpio;
+ 	/* PWM params */
+@@ -170,6 +172,12 @@ struct drm_panel_esd_config {
+ 	u32 groups;
+ };
+ 
++#define BRIGHTNESS_ALPHA_PAIR_LEN 2
++struct brightness_alpha_pair {
++	u32 brightness;
++	u32 alpha;
++};
++
+ struct dsi_panel {
+ 	const char *name;
+ 	const char *type;
+@@ -221,6 +229,9 @@ struct dsi_panel {
+ 	int power_mode;
+ 	enum dsi_panel_physical_type panel_type;
+ 
++	struct brightness_alpha_pair *fod_dim_lut;
++	u32 fod_dim_lut_count;
++
+ #if defined(CONFIG_DISPLAY_SAMSUNG) || defined(CONFIG_DISPLAY_SAMSUNG_LEGO)
+ 	void *panel_private;
+ 	struct device_node *self_display_of_node;
+@@ -300,6 +311,10 @@ int dsi_panel_set_lp2(struct dsi_panel *panel);
+ 
+ int dsi_panel_set_nolp(struct dsi_panel *panel);
+ 
++int dsi_panel_set_fod_hbm(struct dsi_panel *panel, bool status);
++
++u32 dsi_panel_get_fod_dim_alpha(struct dsi_panel *panel);
++
+ int dsi_panel_prepare(struct dsi_panel *panel);
+ 
+ int dsi_panel_enable(struct dsi_panel *panel);
+diff --git a/drivers/gpu/drm/msm/msm_drv.h b/drivers/gpu/drm/msm/msm_drv.h
+index 788d9cccec3e..34fba0ed7fa2 100644
+--- a/drivers/gpu/drm/msm/msm_drv.h
++++ b/drivers/gpu/drm/msm/msm_drv.h
+@@ -103,6 +103,7 @@ enum msm_mdp_plane_property {
+ 
+ 	/* range properties */
+ 	PLANE_PROP_ZPOS = PLANE_PROP_BLOBCOUNT,
++	PLANE_PROP_FOD,
+ 	PLANE_PROP_ALPHA,
+ 	PLANE_PROP_COLOR_FILL,
+ 	PLANE_PROP_H_DECIMATE,
+diff --git a/drivers/gpu/drm/msm/msm_prop.c b/drivers/gpu/drm/msm/msm_prop.c
+index f463fbfc9390..5cb6b458614a 100644
+--- a/drivers/gpu/drm/msm/msm_prop.c
++++ b/drivers/gpu/drm/msm/msm_prop.c
+@@ -379,16 +379,18 @@ int msm_property_atomic_set(struct msm_property_info *info,
+ 	if ((property_idx == -EINVAL) || !property_state->values) {
+ 		DRM_ERROR("invalid argument(s)\n");
+ 	} else {
++		bool is_blob = (property->flags & DRM_MODE_PROP_BLOB) &&
++			       (property_idx < info->blob_count);
++		struct drm_property_blob *prev_blob;
++
+ 		/* extra handling for incoming properties */
+ 		mutex_lock(&info->property_lock);
+-		if ((property->flags & DRM_MODE_PROP_BLOB) &&
+-			(property_idx < info->blob_count)) {
++		if (is_blob) {
++			prev_blob = property_state->values[property_idx].blob;
+ 
+ 			/* need to clear previous ref */
+-			if (property_state->values[property_idx].blob)
+-				drm_property_blob_put(
+-					property_state->values[
+-						property_idx].blob);
++			if (prev_blob)
++				drm_property_blob_put(prev_blob);
+ 
+ 			/* DRM lookup also takes a reference */
+ 			blob = drm_property_lookup_blob(info->dev,
+@@ -409,6 +411,9 @@ int msm_property_atomic_set(struct msm_property_info *info,
+ 			}
+ 		}
+ 
++		if (is_blob && !prev_blob && !blob)
++			goto skip_mark_dirty;
++
+ 		/* update value and flag as dirty */
+ 		if (property_state->values[property_idx].value != val ||
+ 				info->property_data[property_idx].force_dirty) {
+@@ -418,6 +423,8 @@ int msm_property_atomic_set(struct msm_property_info *info,
+ 
+ 			DBG("%s - %lld", property->name, val);
+ 		}
++
++skip_mark_dirty:
+ 		mutex_unlock(&info->property_lock);
+ 		rc = 0;
+ 	}
+diff --git a/drivers/gpu/drm/msm/samsung/ss_dsi_panel_common.c b/drivers/gpu/drm/msm/samsung/ss_dsi_panel_common.c
+index 2ec8f3bf31ef..b7062fe12162 100755
+--- a/drivers/gpu/drm/msm/samsung/ss_dsi_panel_common.c
++++ b/drivers/gpu/drm/msm/samsung/ss_dsi_panel_common.c
+@@ -2218,6 +2218,12 @@ int ss_panel_off_post(struct samsung_display_driver_data *vdd)
+ 
+ 	LCD_INFO("+\n");
+ 
++	if (vdd->finger_mask)
++		vdd->finger_mask = 0;
++
++	if (vdd->br.finger_mask_bl_level)
++		vdd->br.finger_mask_bl_level = 0;
++
+ 	if (vdd->mdnie.support_trans_dimming)
+ 		vdd->mdnie.disable_trans_dimming = true;
+ 
+diff --git a/drivers/gpu/drm/msm/samsung/ss_dsi_panel_sysfs.c b/drivers/gpu/drm/msm/samsung/ss_dsi_panel_sysfs.c
+index 2aa2a68a845d..fb345584abc5 100755
+--- a/drivers/gpu/drm/msm/samsung/ss_dsi_panel_sysfs.c
++++ b/drivers/gpu/drm/msm/samsung/ss_dsi_panel_sysfs.c
+@@ -3915,6 +3915,15 @@ static ssize_t ss_finger_hbm_store(struct device *dev,
+ 	LCD_INFO("mask_bl_level value : %d\n", value);
+ 	vdd->br.finger_mask_bl_level = value;
+ 
++	// brightness value > 0 means enabled
++	if (value > 0) {
++		vdd->finger_mask = 1;
++	} else {
++		vdd->finger_mask = 0;
++	}
++	// Update finger mask after turning on and off
++	vdd->finger_mask_updated = true;
++
+ 	return size;
+ 
+ }
+diff --git a/drivers/gpu/drm/msm/sde/sde_color_processing.c b/drivers/gpu/drm/msm/sde/sde_color_processing.c
+index eb616dca9030..04922752b354 100644
+--- a/drivers/gpu/drm/msm/sde/sde_color_processing.c
++++ b/drivers/gpu/drm/msm/sde/sde_color_processing.c
+@@ -19,6 +19,7 @@
+ #include "sde_color_processing.h"
+ #include "sde_kms.h"
+ #include "sde_crtc.h"
++#include "sde_plane.h"
+ #include "sde_hw_dspp.h"
+ #include "sde_hw_lm.h"
+ #include "sde_ad4.h"
+@@ -650,6 +651,9 @@ static void sde_cp_crtc_setfeature(struct sde_cp_node *prop_node,
+ 	hw_cfg.num_of_mixers = sde_crtc->num_mixers;
+ 	hw_cfg.last_feature = 0;
+ 
++	if (prop_node->feature == SDE_CP_CRTC_DSPP_PCC)
++		return;
++
+ 	for (i = 0; i < num_mixers && !ret; i++) {
+ 		hw_lm = sde_crtc->mixers[i].hw_lm;
+ 		hw_dspp = sde_crtc->mixers[i].hw_dspp;
+@@ -2138,3 +2142,24 @@ int sde_cp_hist_interrupt(struct drm_crtc *crtc_drm, bool en,
+ exit:
+ 	return ret;
+ }
++
++const struct drm_msm_pcc *sde_cp_crtc_get_pcc_cfg(struct drm_crtc *drm_crtc)
++{
++	struct drm_property_blob *blob = NULL;
++	struct sde_cp_node *prop_node = NULL;
++	struct sde_crtc *crtc;
++
++	crtc = to_sde_crtc(drm_crtc);
++
++	mutex_lock(&crtc->crtc_cp_lock);
++	list_for_each_entry(prop_node, &crtc->feature_list, feature_list) {
++		if (prop_node->feature == SDE_CP_CRTC_DSPP_PCC) {
++			blob = prop_node->blob_ptr;
++			break;
++		}
++	}
++
++	mutex_unlock(&crtc->crtc_cp_lock);
++
++	return blob ? (struct drm_msm_pcc *) blob->data : NULL;
++}
+diff --git a/drivers/gpu/drm/msm/sde/sde_color_processing.h b/drivers/gpu/drm/msm/sde/sde_color_processing.h
+index 7481a594f4fc..900afc687d2a 100644
+--- a/drivers/gpu/drm/msm/sde/sde_color_processing.h
++++ b/drivers/gpu/drm/msm/sde/sde_color_processing.h
+@@ -152,4 +152,7 @@ void sde_cp_crtc_post_ipc(struct drm_crtc *crtc);
+  */
+ int sde_cp_hist_interrupt(struct drm_crtc *crtc_drm, bool en,
+ 	struct sde_irq_callback *hist_irq);
++
++const struct drm_msm_pcc *sde_cp_crtc_get_pcc_cfg(struct drm_crtc *crtc);
++
+ #endif /*_SDE_COLOR_PROCESSING_H */
+diff --git a/drivers/gpu/drm/msm/sde/sde_connector.c b/drivers/gpu/drm/msm/sde/sde_connector.c
+index ea11f4e87cfc..d5d79ba5a37c 100644
+--- a/drivers/gpu/drm/msm/sde/sde_connector.c
++++ b/drivers/gpu/drm/msm/sde/sde_connector.c
+@@ -645,11 +645,13 @@ int sde_connector_pre_kickoff(struct drm_connector *connector)
+ 		if (vdd->support_optical_fingerprint) {
+ 			finger_mask_state = sde_connector_get_property(c_conn->base.state,
+ 					CONNECTOR_PROP_FINGERPRINT_MASK);
+-			vdd->finger_mask_updated = false;
+-			if (finger_mask_state != vdd->finger_mask) {
+-				vdd->finger_mask = finger_mask_state;
+-				vdd->finger_mask_updated = true;
+-				SDE_ERROR("[FINGER_MASK]updated finger mask mode %d\n", finger_mask_state);
++                       if (finger_mask_state == 0 && vdd->finger_mask == 1) {
++                               finger_mask_state = vdd->finger_mask;
++                               SDE_ERROR("[FINGER_MASK]updated finger mask mode %d\n", vdd->finger_mask);
++                       } else if (finger_mask_state == 1 && vdd->finger_mask == 0) {
++                               finger_mask_state = vdd->finger_mask;
++                               vdd->finger_mask_updated = false;
++                               SDE_ERROR("[FINGER_MASK]updated finger mask mode %d\n", vdd->finger_mask);
+ 			}
+ 		}
+ 	}
+diff --git a/drivers/gpu/drm/msm/sde/sde_crtc.c b/drivers/gpu/drm/msm/sde/sde_crtc.c
+index 78589a6cc989..e98769360e15 100644
+--- a/drivers/gpu/drm/msm/sde/sde_crtc.c
++++ b/drivers/gpu/drm/msm/sde/sde_crtc.c
+@@ -42,6 +42,8 @@
+ #include "sde_power_handle.h"
+ #include "sde_core_perf.h"
+ #include "sde_trace.h"
++#include "dsi_display.h"
++#include "ss_dsi_panel_common.h"
+ 
+ #define SDE_PSTATES_MAX (SDE_STAGE_MAX * 4)
+ #define SDE_MULTIRECT_PLANE_MAX (SDE_STAGE_MAX * 2)
+@@ -2144,6 +2146,10 @@ static void _sde_crtc_blend_setup_mixer(struct drm_crtc *crtc,
+ 		for (i = 0; i < cstate->num_dim_layers; i++)
+ 			_sde_crtc_setup_dim_layer_cfg(crtc, sde_crtc,
+ 					mixer, &cstate->dim_layer[i]);
++
++		if (cstate->fod_dim_layer)
++			_sde_crtc_setup_dim_layer_cfg(crtc, sde_crtc,
++					mixer, cstate->fod_dim_layer);
+ 	}
+ 
+ 	_sde_crtc_program_lm_output_roi(crtc);
+@@ -5281,6 +5287,107 @@ static int _sde_crtc_check_secure_state(struct drm_crtc *crtc,
+ 	return 0;
+ }
+ 
++static struct sde_hw_dim_layer* sde_crtc_setup_fod_dim_layer(
++		struct sde_crtc_state *cstate,
++		uint32_t stage)
++{
++	struct drm_crtc_state *crtc_state = &cstate->base;
++	struct drm_display_mode *mode = &crtc_state->adjusted_mode;
++	struct sde_hw_dim_layer *dim_layer = NULL;
++	struct dsi_display *display;
++	struct sde_kms *kms;
++	uint32_t layer_stage;
++	uint32_t alpha;
++
++	kms = _sde_crtc_get_kms(crtc_state->crtc);
++
++	if (!kms || !kms->catalog) {
++		SDE_ERROR("Invalid kms\n");
++		goto error;
++	}
++
++	layer_stage = SDE_STAGE_0 + stage;
++
++	if (layer_stage >= kms->catalog->mixer[0].sblk->maxblendstages) {
++		SDE_ERROR("Stage too large %u vs max %u\n", layer_stage,
++			kms->catalog->mixer[0].sblk->maxblendstages);
++		goto error;
++	}
++
++	if (cstate->num_dim_layers == SDE_MAX_DIM_LAYERS) {
++		SDE_ERROR("Max dim layers reached\n");
++		goto error;
++	}
++
++	display = get_main_display();
++
++	if (!display || !display->panel) {
++		SDE_ERROR("Invalid primary display\n");
++		goto error;
++	}
++
++	mutex_lock(&display->panel->panel_lock);
++	alpha = dsi_panel_get_fod_dim_alpha(display->panel);
++	mutex_unlock(&display->panel->panel_lock);
++
++	dim_layer = &cstate->dim_layer[cstate->num_dim_layers];
++	dim_layer->flags = SDE_DRM_DIM_LAYER_INCLUSIVE;
++	dim_layer->stage = layer_stage;
++	dim_layer->rect.x = 0;
++	dim_layer->rect.y = 0;
++	dim_layer->rect.w = mode->hdisplay;
++	dim_layer->rect.h = mode->vdisplay;
++	dim_layer->color_fill =
++			(struct sde_mdss_color) {0, 0, 0, alpha};
++
++error:
++	return dim_layer;
++}
++
++static void sde_crtc_fod_atomic_check(struct sde_crtc_state *cstate,
++		struct plane_state *pstates, int cnt)
++{
++	uint32_t dim_layer_stage;
++	int plane_idx;
++	struct dsi_display *display = get_main_display();
++	struct samsung_display_driver_data *vdd = (struct samsung_display_driver_data *)display->panel->panel_private;
++
++	for (plane_idx = 0; plane_idx < cnt; plane_idx++)
++		if (sde_plane_is_fod_layer(pstates[plane_idx].drm_pstate))
++			break;
++
++	if (plane_idx == cnt) {
++		cstate->fod_dim_layer = NULL;
++	} else {
++		dim_layer_stage = pstates[plane_idx].stage;
++		cstate->fod_dim_layer = sde_crtc_setup_fod_dim_layer(cstate,
++				dim_layer_stage);
++	}
++
++	if (!cstate->fod_dim_layer) {
++		// Samsung fingerprint HBM
++		if (vdd->finger_mask && vdd->br.finger_mask_bl_level != 0) {
++			vdd->br.finger_mask_bl_level = 0;
++			vdd->finger_mask = 0;
++			vdd->finger_mask_updated = true;
++			SDE_DEBUG("[FINGER_MASK] disabled mask");
++		}
++		return;
++	}
++
++	for (plane_idx = 0; plane_idx < cnt; plane_idx++)
++		if (pstates[plane_idx].stage >= dim_layer_stage)
++			pstates[plane_idx].stage++;
++
++	// Samsung fingerprint HBM
++	if (!vdd->finger_mask && vdd->br.finger_mask_bl_level == 0) {
++		vdd->br.finger_mask_bl_level = 331;
++		vdd->finger_mask = 1;
++		vdd->finger_mask_updated = true;
++		SDE_DEBUG("[FINGER_MASK] enabled mask");
++	}
++}
++
+ static int sde_crtc_atomic_check(struct drm_crtc *crtc,
+ 		struct drm_crtc_state *state)
+ {
+@@ -5476,6 +5583,8 @@ static int sde_crtc_atomic_check(struct drm_crtc *crtc,
+ 		}
+ 	}
+ 
++	sde_crtc_fod_atomic_check(cstate, pstates, cnt);
++
+ 	/* assign mixer stages based on sorted zpos property */
+ 	if (cnt > 0)
+ 		sort(pstates, cnt, sizeof(pstates[0]), pstate_cmp, NULL);
+diff --git a/drivers/gpu/drm/msm/sde/sde_crtc.h b/drivers/gpu/drm/msm/sde/sde_crtc.h
+index 4676a140267c..0fc1e20a8213 100644
+--- a/drivers/gpu/drm/msm/sde/sde_crtc.h
++++ b/drivers/gpu/drm/msm/sde/sde_crtc.h
+@@ -420,6 +420,7 @@ struct sde_crtc_state {
+ 	uint64_t input_fence_timeout_ns;
+ 	uint32_t num_dim_layers;
+ 	struct sde_hw_dim_layer dim_layer[SDE_MAX_DIM_LAYERS];
++	struct sde_hw_dim_layer *fod_dim_layer;
+ 	uint32_t num_ds;
+ 	uint32_t num_ds_enabled;
+ 	bool ds_dirty;
+diff --git a/drivers/gpu/drm/msm/sde/sde_hw_catalog.h b/drivers/gpu/drm/msm/sde/sde_hw_catalog.h
+index 95c267021de5..8e0ea22262a6 100644
+--- a/drivers/gpu/drm/msm/sde/sde_hw_catalog.h
++++ b/drivers/gpu/drm/msm/sde/sde_hw_catalog.h
+@@ -1350,9 +1350,11 @@ void sde_hw_catalog_deinit(struct sde_mdss_cfg *sde_cfg);
+  */
+ static inline bool sde_hw_sspp_multirect_enabled(const struct sde_sspp_cfg *cfg)
+ {
+-	return test_bit(SDE_SSPP_SMART_DMA_V1, &cfg->features) ||
++	return (test_bit(SDE_SSPP_SMART_DMA_V1, &cfg->features) ||
+ 			 test_bit(SDE_SSPP_SMART_DMA_V2, &cfg->features) ||
+-			 test_bit(SDE_SSPP_SMART_DMA_V2p5, &cfg->features);
++			 test_bit(SDE_SSPP_SMART_DMA_V2p5, &cfg->features))
++		&& !(test_bit(SDE_SSPP_CSC_10BIT, &cfg->features) ||
++		     test_bit(SDE_SSPP_CSC, &cfg->features));
+ }
+ 
+ static inline bool sde_hw_intf_te_supported(const struct sde_mdss_cfg *sde_cfg)
+diff --git a/drivers/gpu/drm/msm/sde/sde_hw_mdss.h b/drivers/gpu/drm/msm/sde/sde_hw_mdss.h
+index bd3ef45df834..fbbec709a569 100644
+--- a/drivers/gpu/drm/msm/sde/sde_hw_mdss.h
++++ b/drivers/gpu/drm/msm/sde/sde_hw_mdss.h
+@@ -174,6 +174,7 @@ enum sde_stage {
+ 	SDE_STAGE_8,
+ 	SDE_STAGE_9,
+ 	SDE_STAGE_10,
++	SDE_STAGE_11,
+ 	SDE_STAGE_MAX
+ };
+ enum sde_dspp {
+diff --git a/drivers/gpu/drm/msm/sde/sde_hw_sspp.c b/drivers/gpu/drm/msm/sde/sde_hw_sspp.c
+index 35b1e099fcbe..25feafec3d20 100644
+--- a/drivers/gpu/drm/msm/sde/sde_hw_sspp.c
++++ b/drivers/gpu/drm/msm/sde/sde_hw_sspp.c
+@@ -231,7 +231,7 @@ static void sde_hw_sspp_setup_multirect(struct sde_hw_pipe *ctx,
+ }
+ 
+ static void _sspp_setup_opmode(struct sde_hw_pipe *ctx,
+-		u32 mask, u8 en)
++		bool csc_en, bool yuv_en)
+ {
+ 	u32 idx;
+ 	u32 opmode;
+@@ -242,17 +242,18 @@ static void _sspp_setup_opmode(struct sde_hw_pipe *ctx,
+ 		return;
+ 
+ 	opmode = SDE_REG_READ(&ctx->hw, SSPP_VIG_OP_MODE + idx);
++	opmode &= ~(VIG_OP_CSC_EN | VIG_OP_CSC_SRC_DATAFMT);
++	if (csc_en)
++		opmode |= VIG_OP_CSC_EN;
+ 
+-	if (en)
+-		opmode |= mask;
+-	else
+-		opmode &= ~mask;
++	if (yuv_en)
++		opmode |= VIG_OP_CSC_SRC_DATAFMT;
+ 
+ 	SDE_REG_WRITE(&ctx->hw, SSPP_VIG_OP_MODE + idx, opmode);
+ }
+ 
+ static void _sspp_setup_csc10_opmode(struct sde_hw_pipe *ctx,
+-		u32 mask, u8 en)
++		bool csc_en, bool yuv_en)
+ {
+ 	u32 idx;
+ 	u32 opmode;
+@@ -261,10 +262,12 @@ static void _sspp_setup_csc10_opmode(struct sde_hw_pipe *ctx,
+ 		return;
+ 
+ 	opmode = SDE_REG_READ(&ctx->hw, SSPP_VIG_CSC_10_OP_MODE + idx);
+-	if (en)
+-		opmode |= mask;
+-	else
+-		opmode &= ~mask;
++	opmode &= ~(VIG_CSC_10_EN | VIG_CSC_10_SRC_DATAFMT);
++	if (csc_en)
++		opmode |= VIG_CSC_10_EN;
++
++	if (yuv_en)
++		opmode |= VIG_CSC_10_SRC_DATAFMT;
+ 
+ 	SDE_REG_WRITE(&ctx->hw, SSPP_VIG_CSC_10_OP_MODE + idx, opmode);
+ }
+@@ -300,7 +303,8 @@ static void sde_hw_sspp_set_src_split_order(struct sde_hw_pipe *ctx,
+ static void sde_hw_sspp_setup_format(struct sde_hw_pipe *ctx,
+ 		const struct sde_format *fmt,
+ 		bool const_alpha_en, u32 flags,
+-		enum sde_sspp_multirect_index rect_mode)
++		enum sde_sspp_multirect_index rect_mode,
++		bool force_csc)
+ {
+ 	struct sde_hw_blk_reg_map *c;
+ 	u32 chroma_samp, unpack, src_format;
+@@ -308,6 +312,7 @@ static void sde_hw_sspp_setup_format(struct sde_hw_pipe *ctx,
+ 	u32 alpha_en_mask = 0;
+ 	u32 op_mode_off, unpack_pat_off, format_off;
+ 	u32 idx;
++	bool csc_en = force_csc || SDE_FORMAT_IS_YUV(fmt);
+ 
+ 	if (_sspp_subblk_offset(ctx, SDE_SSPP_SRC, &idx) || !fmt)
+ 		return;
+@@ -395,12 +400,9 @@ static void sde_hw_sspp_setup_format(struct sde_hw_pipe *ctx,
+ 
+ 	/* update scaler opmode, if appropriate */
+ 	if (test_bit(SDE_SSPP_CSC, &ctx->cap->features))
+-		_sspp_setup_opmode(ctx, VIG_OP_CSC_EN | VIG_OP_CSC_SRC_DATAFMT,
+-			SDE_FORMAT_IS_YUV(fmt));
++		_sspp_setup_opmode(ctx, csc_en, SDE_FORMAT_IS_YUV(fmt));
+ 	else if (test_bit(SDE_SSPP_CSC_10BIT, &ctx->cap->features))
+-		_sspp_setup_csc10_opmode(ctx,
+-			VIG_CSC_10_EN | VIG_CSC_10_SRC_DATAFMT,
+-			SDE_FORMAT_IS_YUV(fmt));
++		_sspp_setup_csc10_opmode(ctx, csc_en, SDE_FORMAT_IS_YUV(fmt));
+ 
+ 	SDE_REG_WRITE(c, format_off + idx, src_format);
+ 	SDE_REG_WRITE(c, unpack_pat_off + idx, unpack);
+diff --git a/drivers/gpu/drm/msm/sde/sde_hw_sspp.h b/drivers/gpu/drm/msm/sde/sde_hw_sspp.h
+index e9efb7ef98b8..93697e39971f 100644
+--- a/drivers/gpu/drm/msm/sde/sde_hw_sspp.h
++++ b/drivers/gpu/drm/msm/sde/sde_hw_sspp.h
+@@ -322,7 +322,8 @@ struct sde_hw_sspp_ops {
+ 	void (*setup_format)(struct sde_hw_pipe *ctx,
+ 			const struct sde_format *fmt,
+ 			bool blend_enabled, u32 flags,
+-			enum sde_sspp_multirect_index index);
++			enum sde_sspp_multirect_index index,
++			bool force_csc);
+ 
+ 	/**
+ 	 * setup_rects - setup pipe ROI rectangles
+diff --git a/drivers/gpu/drm/msm/sde/sde_plane.c b/drivers/gpu/drm/msm/sde/sde_plane.c
+index 6f0cdc99fa24..dcd50108836b 100644
+--- a/drivers/gpu/drm/msm/sde/sde_plane.c
++++ b/drivers/gpu/drm/msm/sde/sde_plane.c
+@@ -133,8 +133,12 @@ struct sde_plane {
+ 	bool revalidate;
+ 	bool xin_halt_forced_clk;
+ 
++	const struct drm_msm_pcc *pcc_cfg;
++	uint32_t pcc_coeff[9];
+ 	struct sde_csc_cfg csc_cfg;
++	struct sde_csc_cfg csc_pcc_cfg;
+ 	struct sde_csc_cfg *csc_usr_ptr;
++	struct sde_csc_cfg *csc_pcc_ptr;
+ 	struct sde_csc_cfg *csc_ptr;
+ 
+ 	const struct sde_sspp_sub_blks *pipe_sblk;
+@@ -1416,6 +1420,113 @@ static inline void _sde_plane_setup_csc(struct sde_plane *psde)
+ 			psde->csc_ptr->csc_mv[2]);
+ }
+ 
++#define CSC_MASK			0x7fffff
++#define CSC_ONE				(1 << 16)
++#define CSC_DGM_ONE			(1 << 9)
++#define CSC_10BIT_LIMIT			0x3ff
++#define CSC_8BIT_LIMIT			0xff
++#define PCC_MASK			0x3ffff
++#define PCC_ONE				(1 << 15)
++
++#define CSC_BIAS_CLAMP(value) \
++	{ 0, 0, 0 }, \
++	{ 0, 0, 0 }, \
++	{ 0, value, 0, value, 0, value }, \
++	{ 0, value, 0, value, 0, value }
++
++static const struct sde_csc_cfg sde_identity_csc_cfg = {
++	{
++		CSC_ONE, 0, 0,
++		0, CSC_ONE, 0,
++		0, 0, CSC_ONE,
++	},
++	CSC_BIAS_CLAMP(CSC_8BIT_LIMIT),
++};
++static const struct sde_csc_cfg sde_identity_csc10_cfg = {
++	{
++		CSC_ONE, 0, 0,
++		0, CSC_ONE, 0,
++		0, 0, CSC_ONE,
++	},
++	CSC_BIAS_CLAMP(CSC_10BIT_LIMIT),
++};
++static const struct sde_csc_cfg sde_identity_csc_dgm_cfg = {
++	{
++		CSC_DGM_ONE, 0, 0,
++		0, CSC_DGM_ONE, 0,
++		0, 0, CSC_DGM_ONE,
++	},
++};
++
++static inline s32 csc_to_signed(u32 v)
++{
++	return sign_extend32(v, __fls(CSC_MASK));
++}
++
++static inline u32 csc_to_unsigned(s32 v)
++{
++	return ((u32) v) & CSC_MASK;
++}
++
++static inline s32 pcc_to_signed(u32 v)
++{
++	return sign_extend32(v, __fls(PCC_MASK));
++}
++
++static inline void _sde_plane_mul_csc_pcc(struct sde_plane *psde,
++					  const struct sde_csc_cfg *csc_cfg)
++{
++	unsigned int i, j, u;
++
++	memcpy(&psde->csc_pcc_cfg, csc_cfg, sizeof(psde->csc_pcc_cfg));
++
++	for (i = 0; i < 3; i++) {
++		for (j = 0; j < 3; j++) {
++			unsigned int ij = i * 3 + j;
++			s64 sum = 0;
++
++			for (u = 0; u < 3; u++) {
++				unsigned int iu = i * 3 + u;
++				unsigned int uj = u * 3 + j;
++				s64 csc = csc_to_signed(csc_cfg->csc_mv[uj]);
++				s64 pcc = pcc_to_signed(psde->pcc_coeff[iu]);
++
++				sum += csc * pcc;
++			}
++
++			sum = div_s64(sum, PCC_ONE);
++
++			psde->csc_pcc_cfg.csc_mv[ij] = csc_to_unsigned(sum);
++		}
++	}
++}
++
++static inline void _sde_plane_setup_csc_pcc(struct sde_plane *psde)
++{
++	const struct sde_csc_cfg *csc_ptr = psde->csc_ptr;
++
++	psde->csc_pcc_ptr = NULL;
++
++	if (!psde->pcc_cfg)
++		return;
++
++	if (!csc_ptr) {
++		if (psde->features & BIT(SDE_SSPP_CSC_10BIT)) {
++			csc_ptr = &sde_identity_csc10_cfg;
++		} else if (psde->features & BIT(SDE_SSPP_CSC)) {
++			csc_ptr = &sde_identity_csc_cfg;
++		} else if (psde->features & BIT(SDE_SSPP_DGM_CSC)) {
++			csc_ptr = &sde_identity_csc_dgm_cfg;
++		} else {
++			return;
++		}
++	}
++
++	_sde_plane_mul_csc_pcc(psde, csc_ptr);
++
++	psde->csc_pcc_ptr = &psde->csc_pcc_cfg;
++}
++
+ static void sde_color_process_plane_setup(struct drm_plane *plane)
+ {
+ 	struct sde_plane *psde;
+@@ -1700,7 +1811,8 @@ static int _sde_plane_color_fill(struct sde_plane *psde,
+ 			psde->pipe_hw->ops.setup_format(psde->pipe_hw,
+ 					fmt, blend_enable,
+ 					SDE_SSPP_SOLID_FILL,
+-					pstate->multirect_index);
++					pstate->multirect_index,
++					false);
+ 
+ 		if (psde->pipe_hw->ops.setup_rects)
+ 			psde->pipe_hw->ops.setup_rects(psde->pipe_hw,
+@@ -3847,10 +3959,30 @@ static int sde_plane_atomic_check(struct drm_plane *plane,
+ 	return ret;
+ }
+ 
++struct sde_csc_cfg *sde_plane_get_csc_cfg(struct drm_plane *plane)
++{
++	struct sde_plane_state *pstate;
++	struct sde_csc_cfg *csc_ptr;
++	struct sde_plane *psde;
++
++	psde = to_sde_plane(plane);
++	pstate = to_sde_plane_state(plane->state);
++
++	if (sde_plane_is_fod_layer(&pstate->base))
++		csc_ptr = NULL;
++	else if (psde->csc_pcc_ptr)
++		csc_ptr = psde->csc_pcc_ptr;
++	else
++		csc_ptr = psde->csc_ptr;
++
++	return csc_ptr;
++}
++
+ void sde_plane_flush(struct drm_plane *plane)
+ {
+ 	struct sde_plane *psde;
+ 	struct sde_plane_state *pstate;
++	struct sde_csc_cfg *csc_ptr;
+ 
+ 	if (!plane || !plane->state) {
+ 		SDE_ERROR("invalid plane\n");
+@@ -3860,6 +3992,8 @@ void sde_plane_flush(struct drm_plane *plane)
+ 	psde = to_sde_plane(plane);
+ 	pstate = to_sde_plane_state(plane->state);
+ 
++	csc_ptr = sde_plane_get_csc_cfg(&psde->base);
++
+ 	/*
+ 	 * These updates have to be done immediately before the plane flush
+ 	 * timing, and may not be moved to the atomic_update/mode_set functions.
+@@ -3870,8 +4004,8 @@ void sde_plane_flush(struct drm_plane *plane)
+ 	else if (psde->color_fill & SDE_PLANE_COLOR_FILL_FLAG)
+ 		/* force 100% alpha */
+ 		_sde_plane_color_fill(psde, psde->color_fill, 0xFF);
+-	else if (psde->pipe_hw && psde->csc_ptr && psde->pipe_hw->ops.setup_csc)
+-		psde->pipe_hw->ops.setup_csc(psde->pipe_hw, psde->csc_ptr);
++	else if (psde->pipe_hw && csc_ptr && psde->pipe_hw->ops.setup_csc)
++		psde->pipe_hw->ops.setup_csc(psde->pipe_hw, csc_ptr);
+ 
+ 	/* flag h/w flush complete */
+ 	if (plane->state)
+@@ -3893,6 +4027,37 @@ void sde_plane_set_error(struct drm_plane *plane, bool error)
+ 	psde->is_error = error;
+ }
+ 
++static inline void _sde_plane_set_csc_pcc(struct sde_plane *psde,
++					  struct sde_plane_state *pstate,
++					  struct drm_crtc *crtc)
++{
++	const struct drm_msm_pcc *pcc_cfg = sde_cp_crtc_get_pcc_cfg(crtc);
++
++	if (pcc_cfg == psde->pcc_cfg)
++		return;
++
++	psde->pcc_cfg = pcc_cfg;
++
++	if (pcc_cfg) {
++		unsigned int i = 0;
++
++#define set_coeff(m) \
++	psde->pcc_coeff[i++] = psde->pcc_cfg->m;
++
++		set_coeff(r.r);
++		set_coeff(r.g);
++		set_coeff(r.b);
++		set_coeff(g.r);
++		set_coeff(g.g);
++		set_coeff(g.b);
++		set_coeff(b.r);
++		set_coeff(b.g);
++		set_coeff(b.b);
++	}
++
++	pstate->dirty |= SDE_PLANE_DIRTY_RECTS;
++}
++
+ static int sde_plane_sspp_atomic_update(struct drm_plane *plane,
+ 				struct drm_plane_state *old_state)
+ {
+@@ -3902,6 +4067,7 @@ static int sde_plane_sspp_atomic_update(struct drm_plane *plane,
+ 	struct sde_plane_state *pstate;
+ 	struct sde_plane_state *old_pstate;
+ 	struct sde_plane_rot_state *rstate;
++	struct sde_csc_cfg *csc_ptr;
+ 	const struct sde_format *fmt;
+ 	struct drm_crtc *crtc;
+ 	struct drm_framebuffer *fb;
+@@ -3994,6 +4160,7 @@ static int sde_plane_sspp_atomic_update(struct drm_plane *plane,
+ 		case PLANE_PROP_ALPHA:
+ 		case PLANE_PROP_INPUT_FENCE:
+ 		case PLANE_PROP_BLEND_OP:
++		case PLANE_PROP_FOD:
+ 			/* no special action required */
+ 			break;
+ 		case PLANE_PROP_FB_TRANSLATION_MODE:
+@@ -4041,6 +4208,8 @@ static int sde_plane_sspp_atomic_update(struct drm_plane *plane,
+ 	_sde_plane_sspp_atomic_check_mode_changed(psde, state,
+ 								old_state);
+ 
++	_sde_plane_set_csc_pcc(psde, pstate, crtc);
++
+ 	/* re-program the output rects always if partial update roi changed */
+ 	if (sde_crtc_is_crtc_roi_dirty(crtc->state))
+ 		pstate->dirty |= SDE_PLANE_DIRTY_RECTS;
+@@ -4169,6 +4338,16 @@ static int sde_plane_sspp_atomic_update(struct drm_plane *plane,
+ 					&pstate->line_insertion_cfg);
+ 	}
+ 
++	/* update csc */
++	if (SDE_FORMAT_IS_YUV(fmt))
++		_sde_plane_setup_csc(psde);
++	else
++		psde->csc_ptr = 0;
++
++	_sde_plane_setup_csc_pcc(psde);
++
++	csc_ptr = sde_plane_get_csc_cfg(&psde->base);
++
+ 	if ((pstate->dirty & SDE_PLANE_DIRTY_FORMAT ||
+ 			pstate->dirty & SDE_PLANE_DIRTY_RECTS) &&
+ 			psde->pipe_hw->ops.setup_format) {
+@@ -4181,7 +4360,7 @@ static int sde_plane_sspp_atomic_update(struct drm_plane *plane,
+ 		/* update format */
+ 		psde->pipe_hw->ops.setup_format(psde->pipe_hw, fmt,
+ 				pstate->const_alpha_en, src_flags,
+-				pstate->multirect_index);
++				pstate->multirect_index, !!csc_ptr);
+ 
+ 		if (psde->pipe_hw->ops.setup_cdp) {
+ 			struct sde_hw_pipe_cdp_cfg *cdp_cfg = &pstate->cdp_cfg;
+@@ -4233,12 +4412,6 @@ static int sde_plane_sspp_atomic_update(struct drm_plane *plane,
+ 					psde->pipe_hw, &pstate->sc_cfg);
+ 		}
+ 
+-		/* update csc */
+-		if (SDE_FORMAT_IS_YUV(fmt))
+-			_sde_plane_setup_csc(psde);
+-		else
+-			psde->csc_ptr = 0;
+-
+ 		if (psde->pipe_hw->ops.setup_inverse_pma) {
+ 			uint32_t pma_mode = 0;
+ 
+@@ -4252,7 +4425,7 @@ static int sde_plane_sspp_atomic_update(struct drm_plane *plane,
+ 
+ 		if (psde->pipe_hw->ops.setup_dgm_csc)
+ 			psde->pipe_hw->ops.setup_dgm_csc(psde->pipe_hw,
+-				pstate->multirect_index, psde->csc_usr_ptr);
++				pstate->multirect_index, csc_ptr);
+ 	}
+ 
+ 	sde_color_process_plane_setup(plane);
+@@ -4324,6 +4497,18 @@ static void _sde_plane_atomic_disable(struct drm_plane *plane,
+ 				SDE_SSPP_RECT_SOLO, SDE_SSPP_MULTIRECT_NONE);
+ }
+ 
++int sde_plane_is_fod_layer(const struct drm_plane_state *drm_state)
++{
++	struct sde_plane_state *pstate;
++
++	if (!drm_state)
++		return 0;
++
++	pstate = to_sde_plane_state(drm_state);
++
++	return sde_plane_get_property(pstate, PLANE_PROP_FOD);
++}
++
+ static void sde_plane_atomic_update(struct drm_plane *plane,
+ 				struct drm_plane_state *old_state)
+ {
+@@ -4408,7 +4593,6 @@ static void _sde_plane_install_properties(struct drm_plane *plane,
+ 	const struct sde_format_extended *format_list;
+ 	struct sde_kms_info *info;
+ 	struct sde_plane *psde = to_sde_plane(plane);
+-	int zpos_max = 255;
+ 	int zpos_def = 0;
+ 	char feature_name[256];
+ 
+@@ -4426,24 +4610,16 @@ static void _sde_plane_install_properties(struct drm_plane *plane,
+ 
+ 	psde->catalog = catalog;
+ 
+-	if (sde_is_custom_client()) {
+-		if (catalog->mixer_count &&
+-				catalog->mixer[0].sblk->maxblendstages) {
+-			zpos_max = catalog->mixer[0].sblk->maxblendstages - 1;
+-
+-			if (catalog->has_base_layer &&
+-					(zpos_max > SDE_STAGE_MAX - 1))
+-				zpos_max = SDE_STAGE_MAX - 1;
+-			else if (zpos_max > SDE_STAGE_MAX - SDE_STAGE_0 - 1)
+-				zpos_max = SDE_STAGE_MAX - SDE_STAGE_0 - 1;
+-		}
+-	} else if (plane->type != DRM_PLANE_TYPE_PRIMARY) {
++	if (!sde_is_custom_client() && plane->type != DRM_PLANE_TYPE_PRIMARY) {
+ 		/* reserve zpos == 0 for primary planes */
+ 		zpos_def = drm_plane_index(plane) + 1;
+ 	}
+ 
+ 	msm_property_install_range(&psde->property_info, "zpos",
+-		0x0, 0, zpos_max, zpos_def, PLANE_PROP_ZPOS);
++		0x0, 0, INT_MAX, zpos_def, PLANE_PROP_ZPOS);
++
++	msm_property_install_range(&psde->property_info, "fod",
++		0x0, 0, INT_MAX, 0, PLANE_PROP_FOD);
+ 
+ 	msm_property_install_range(&psde->property_info, "alpha",
+ 		0x0, 0, 255, 255, PLANE_PROP_ALPHA);
+@@ -4684,6 +4860,12 @@ static void _sde_plane_install_properties(struct drm_plane *plane,
+ 			PLANE_PROP_FB_TRANSLATION_MODE);
+ }
+ 
++#define cmp_and_set(old, new) \
++	if ((old) != (new)) { \
++		(old) = (new); \
++		changed = true; \
++	}
++
+ static inline void _sde_plane_set_csc_v1(struct sde_plane *psde,
+ 		void __user *usr_ptr)
+ {
+@@ -4848,6 +5030,7 @@ static void _sde_plane_set_excl_rect_v1(struct sde_plane *psde,
+ 		struct sde_plane_state *pstate, void __user *usr_ptr)
+ {
+ 	struct drm_clip_rect excl_rect_v1;
++	bool changed = false;
+ 
+ 	if (!psde || !pstate) {
+ 		SDE_ERROR("invalid argument(s)\n");
+@@ -4866,10 +5049,13 @@ static void _sde_plane_set_excl_rect_v1(struct sde_plane *psde,
+ 	}
+ 
+ 	/* populate from user space */
+-	pstate->excl_rect.x = excl_rect_v1.x1;
+-	pstate->excl_rect.y = excl_rect_v1.y1;
+-	pstate->excl_rect.w = excl_rect_v1.x2 - excl_rect_v1.x1;
+-	pstate->excl_rect.h = excl_rect_v1.y2 - excl_rect_v1.y1;
++	cmp_and_set(pstate->excl_rect.x, excl_rect_v1.x1);
++	cmp_and_set(pstate->excl_rect.y, excl_rect_v1.y1);
++	cmp_and_set(pstate->excl_rect.w, excl_rect_v1.x2 - excl_rect_v1.x1);
++	cmp_and_set(pstate->excl_rect.h, excl_rect_v1.y2 - excl_rect_v1.y1);
++
++	if (!changed)
++		return;
+ 
+ 	SDE_DEBUG_PLANE(psde, "excl_rect: {%d,%d,%d,%d}\n",
+ 			pstate->excl_rect.x, pstate->excl_rect.y,
+@@ -4882,6 +5068,8 @@ static int sde_plane_atomic_set_property(struct drm_plane *plane,
+ {
+ 	struct sde_plane *psde = plane ? to_sde_plane(plane) : NULL;
+ 	struct sde_plane_state *pstate;
++	struct drm_property *fod_property;
++	uint64_t fod_val = 0;
+ 	int idx, ret = -EINVAL;
+ 
+ 	SDE_DEBUG_PLANE(psde, "\n");
+@@ -4892,11 +5080,25 @@ static int sde_plane_atomic_set_property(struct drm_plane *plane,
+ 		SDE_ERROR_PLANE(psde, "invalid state\n");
+ 	} else {
+ 		pstate = to_sde_plane_state(state);
++		idx = msm_property_index(&psde->property_info,
++				property);
++		if (idx == PLANE_PROP_ZPOS) {
++			if (val & FOD_PRESSED_LAYER_ZORDER) {
++				val &= ~FOD_PRESSED_LAYER_ZORDER;
++				fod_val = 1;
++			}
++
++			fod_property = psde->property_info.
++					property_array[PLANE_PROP_FOD];
++			ret = msm_property_atomic_set(&psde->property_info,
++					&pstate->property_state,
++					fod_property, fod_val);
++			if (ret)
++				SDE_ERROR("failed to set fod prop");
++		}
+ 		ret = msm_property_atomic_set(&psde->property_info,
+ 				&pstate->property_state, property, val);
+ 		if (!ret) {
+-			idx = msm_property_index(&psde->property_info,
+-					property);
+ 			switch (idx) {
+ 			case PLANE_PROP_INPUT_FENCE:
+ 				_sde_plane_set_input_fence(psde, pstate, val);
+diff --git a/drivers/gpu/drm/msm/sde/sde_plane.h b/drivers/gpu/drm/msm/sde/sde_plane.h
+index efd262cd5234..4f1fb1db1d48 100644
+--- a/drivers/gpu/drm/msm/sde/sde_plane.h
++++ b/drivers/gpu/drm/msm/sde/sde_plane.h
+@@ -399,4 +399,6 @@ void sde_plane_clear_ubwc_error(struct drm_plane *plane);
+ void sde_plane_setup_src_split_order(struct drm_plane *plane,
+ 		enum sde_sspp_multirect_index rect_mode, bool enable);
+ 
++int sde_plane_is_fod_layer(const struct drm_plane_state *drm_state);
++
+ #endif /* _SDE_PLANE_H_ */
+diff --git a/drivers/input/keyboard/hall_ic.c b/drivers/input/keyboard/hall_ic.c
+index 36a0768f20e0..421e42a2cdaa 100755
+--- a/drivers/input/keyboard/hall_ic.c
++++ b/drivers/input/keyboard/hall_ic.c
+@@ -97,7 +97,7 @@ static void flip_cover_work(struct work_struct *work)
+ 
+ 	if (first == second) {
+ 		flip_cover = first;
+-		input_report_switch(ddata->input, SW_FLIP, flip_cover);
++		input_report_switch(ddata->input, SW_LID, flip_cover);
+ 		input_sync(ddata->input);
+ #if defined(CONFIG_SUPPORT_HALL_ABNORMAL_TEST)
+ 		/* send uevent for hall ic */
+@@ -123,7 +123,7 @@ static void flip_cover_work(struct work_struct *work)
+ 
+ 	flip_cover = first;
+ 	input_report_switch(ddata->input,
+-			SW_FLIP, ddata->flip_cover);
++			SW_LID, ddata->flip_cover);
+ 	input_sync(ddata->input);
+ #else
+ 	ddata->flip_cover = !gpio_get_value(ddata->gpio_flip_cover_key1) & !gpio_get_value(ddata->gpio_flip_cover_key2);
+@@ -135,7 +135,7 @@ static void flip_cover_work(struct work_struct *work)
+ 			ddata->emulated_hall_ic_status = !ddata->emulated_hall_ic_status;
+ 			pr_info("keys:%s #1 : %d , %d\n", __func__, first, ddata->emulated_hall_ic_status);	
+ 			input_report_switch(ddata->input,
+-					SW_FLIP, ddata->emulated_hall_ic_status);
++					SW_LID, ddata->emulated_hall_ic_status);
+ 			input_sync(ddata->input);
+ 		}
+ 		flip_cover = first;
+@@ -304,7 +304,7 @@ static int hall_probe(struct platform_device *pdev)
+ 	input->dev.parent = &pdev->dev;
+ 
+ 	input->evbit[0] |= BIT_MASK(EV_SW);
+-	input_set_capability(input, EV_SW, SW_FLIP);
++	input_set_capability(input, EV_SW, SW_LID);
+ 
+ 	input->open = hall_open;
+ 	input->close = hall_close;
+diff --git a/drivers/input/touchscreen/sec_ts/y771/sec_ts.c b/drivers/input/touchscreen/sec_ts/y771/sec_ts.c
+index 2234bac19d7a..24e1faf213de 100644
+--- a/drivers/input/touchscreen/sec_ts/y771/sec_ts.c
++++ b/drivers/input/touchscreen/sec_ts/y771/sec_ts.c
+@@ -264,16 +264,27 @@ static ssize_t secure_ownership_show(struct device *dev,
+ 	return snprintf(buf, PAGE_SIZE, "1");
+ }
+ 
++static ssize_t sec_ts_fod_pressed_show(struct device *dev,
++		struct device_attribute *attr, char *buf)
++{
++	struct sec_ts_data *data = dev_get_drvdata(dev);
++
++	return snprintf(buf, PAGE_SIZE, "%u\n", data->fod_pressed);
++}
++
+ static DEVICE_ATTR(secure_touch_enable, (S_IRUGO | S_IWUSR | S_IWGRP),
+ 		secure_touch_enable_show, secure_touch_enable_store);
+ static DEVICE_ATTR(secure_touch, S_IRUGO, secure_touch_show, NULL);
+ 
+ static DEVICE_ATTR(secure_ownership, S_IRUGO, secure_ownership_show, NULL);
+ 
++static DEVICE_ATTR(fod_pressed, S_IRUGO, sec_ts_fod_pressed_show, NULL);
++
+ static struct attribute *secure_attr[] = {
+ 	&dev_attr_secure_touch_enable.attr,
+ 	&dev_attr_secure_touch.attr,
+ 	&dev_attr_secure_ownership.attr,
++	&dev_attr_fod_pressed.attr,
+ 	NULL,
+ };
+ 
+@@ -1259,21 +1270,17 @@ static void sec_ts_read_event(struct sec_ts_data *ts)
+ 
+ 				if (p_event_status->status_data_1 == 2 && p_event_status->status_data_2 == 2) {
+ 					ts->scrub_id = EVENT_TYPE_TSP_SCAN_UNBLOCK;
+-					input_report_key(ts->input_dev, KEY_BLACK_UI_GESTURE, 1);
+ 					input_sync(ts->input_dev);
+ 					input_info(true, &ts->client->dev, "%s: Normal changed(%d)\n", __func__, ts->scrub_id);
+ 				} else if (p_event_status->status_data_1 == 5 && p_event_status->status_data_2 == 2) {
+ 					ts->scrub_id = EVENT_TYPE_TSP_SCAN_UNBLOCK;
+-					input_report_key(ts->input_dev, KEY_BLACK_UI_GESTURE, 1);
+ 					input_sync(ts->input_dev);
+ 					input_info(true, &ts->client->dev, "%s: lp changed(%d)\n", __func__, ts->scrub_id);
+ 				} else if (p_event_status->status_data_1 == 6) {
+ 					ts->scrub_id = EVENT_TYPE_TSP_SCAN_BLOCK;
+-					input_report_key(ts->input_dev, KEY_BLACK_UI_GESTURE, 1);
+ 					input_sync(ts->input_dev);
+ 					input_info(true, &ts->client->dev, "%s: sleep changed(%d)\n", __func__, ts->scrub_id);
+ 				}
+-				input_report_key(ts->input_dev, KEY_BLACK_UI_GESTURE, 0);
+ 				input_sync(ts->input_dev);
+ 
+ 			}
+@@ -1293,9 +1300,9 @@ static void sec_ts_read_event(struct sec_ts_data *ts)
+ 				if ((p_event_status->stype == TYPE_STATUS_EVENT_VENDOR_INFO) &&
+ 					(p_event_status->status_id == STATUS_EVENT_VENDOR_PROXIMITY)) {
+ 						input_info(true, &ts->client->dev, "%s: EAR_DETECT(%d)\n",
+-							__func__, p_event_status->status_data_1);
++							__func__, !p_event_status->status_data_1);
+ 						input_report_abs(ts->input_dev_proximity, ABS_MT_CUSTOM,
+-									p_event_status->status_data_1);
++									!p_event_status->status_data_1);
+ 						input_sync(ts->input_dev_proximity);
+ 				}
+ 			}
+@@ -1326,7 +1333,8 @@ static void sec_ts_read_event(struct sec_ts_data *ts)
+ 				ts->coord[t_id].action = p_event_coord->tchsta;
+ 				ts->coord[t_id].x = (p_event_coord->x_11_4 << 4) | (p_event_coord->x_3_0);
+ 				ts->coord[t_id].y = (p_event_coord->y_11_4 << 4) | (p_event_coord->y_3_0);
+-				ts->coord[t_id].z = p_event_coord->z & 0x3F;
++				ts->coord[t_id].z = p_event_coord->z &
++							SEC_TS_PRESSURE_MAX;
+ 				ts->coord[t_id].ttype = p_event_coord->ttype_3_2 << 2 | p_event_coord->ttype_1_0 << 0;
+ 				ts->coord[t_id].major = p_event_coord->major;
+ 				ts->coord[t_id].minor = p_event_coord->minor;
+@@ -1534,7 +1542,6 @@ static void sec_ts_read_event(struct sec_ts_data *ts)
+ 			case SEC_TS_GESTURE_CODE_SWIPE:
+ 				ts->scrub_id = SPONGE_EVENT_TYPE_SPAY;
+ 				input_info(true, &ts->client->dev, "%s: SPAY: %d\n", __func__, ts->scrub_id);
+-				input_report_key(ts->input_dev, KEY_BLACK_UI_GESTURE, 1);
+ 				ts->all_spay_count++;
+ 				break;
+ 			case SEC_TS_GESTURE_CODE_DOUBLE_TAP:
+@@ -1550,7 +1557,6 @@ static void sec_ts_read_event(struct sec_ts_data *ts)
+ 					input_info(true, &ts->client->dev, "%s: AOD: %d, %d, %d\n",
+ 							__func__, ts->scrub_id, ts->scrub_x, ts->scrub_y);
+ #endif
+-					input_report_key(ts->input_dev, KEY_BLACK_UI_GESTURE, 1);
+ 					ts->all_aod_tap_count++;
+ 				} else if (p_gesture_status->gesture_id == SEC_TS_GESTURE_ID_DOUBLETAP_TO_WAKEUP) {
+ 					input_info(true, &ts->client->dev, "%s: AOT\n", __func__);
+@@ -1571,22 +1577,22 @@ static void sec_ts_read_event(struct sec_ts_data *ts)
+ 				input_info(true, &ts->client->dev, "%s: SINGLE TAP: %d, %d, %d\n",
+ 						__func__, ts->scrub_id, ts->scrub_x, ts->scrub_y);
+ #endif
+-				input_report_key(ts->input_dev, KEY_BLACK_UI_GESTURE, 1);
+ 				break;
+ 			case SEC_TS_GESTURE_CODE_PRESS:
+ 				if (ts->plat_data->support_fod_gesture) {
+ 					if (p_gesture_status->gesture_id == SEC_GESTURE_ID_FOD_LONG || p_gesture_status->gesture_id == SEC_GESTURE_ID_FOD_NORMAL) {
+ 						ts->scrub_id = SPONGE_EVENT_TYPE_FOD;
+ 						input_info(true, &ts->client->dev, "%s: FOD: %s\n", __func__, p_gesture_status->gesture_id ? "normal" : "long");
+-						input_report_key(ts->input_dev, KEY_BLACK_UI_GESTURE, 1);
++						ts->fod_pressed = true;
++						sysfs_notify(&ts->input_dev->dev.kobj, NULL, "fod_pressed");
+ 					} else if (p_gesture_status->gesture_id == SEC_GESTURE_ID_FOD_RELEASE) {
+ 						ts->scrub_id = SPONGE_EVENT_TYPE_FOD_RELEASE;
+ 						input_info(true, &ts->client->dev, "%s: FOD release\n", __func__);
+-						input_report_key(ts->input_dev, KEY_BLACK_UI_GESTURE, 1);
++					ts->fod_pressed = false;
++					sysfs_notify(&ts->input_dev->dev.kobj, NULL, "fod_pressed");
+ 					} else if (p_gesture_status->gesture_id == SEC_GESTURE_ID_FOD_OUT) {
+ 						ts->scrub_id = SPONGE_EVENT_TYPE_FOD_OUT;
+ 						input_info(true, &ts->client->dev, "%s: FOD OUT\n", __func__);
+-						input_report_key(ts->input_dev, KEY_BLACK_UI_GESTURE, 1);
+ 					}
+ 				} else {
+ 					input_info(true, &ts->client->dev, "%s: FOD: %sPRESS\n",
+@@ -1596,7 +1602,6 @@ static void sec_ts_read_event(struct sec_ts_data *ts)
+ 			}
+ 
+ 			input_sync(ts->input_dev);
+-			input_report_key(ts->input_dev, KEY_BLACK_UI_GESTURE, 0);
+ 			break;
+ 		default:
+ 			input_err(true, &ts->client->dev, "%s: unknown event %x %x %x %x %x %x\n", __func__,
+@@ -2342,9 +2347,7 @@ static int sec_ts_parse_dt(struct i2c_client *client)
+ 	of_property_read_u32(np, "sec,ss_touch_num", &pdata->ss_touch_num);
+ 	input_err(true, dev, "%s: ss_touch_num:%d\n", __func__, pdata->ss_touch_num);
+ #endif
+-#ifdef CONFIG_SEC_FACTORY
+ 	pdata->support_mt_pressure = true;
+-#endif
+ 	input_err(true, &client->dev, "%s: i2c buffer limit: %d, lcd_id:%06X, bringup:%d, FW:%s(%d),"
+ 			" id:%d,%d, dex:%d, max(%d/%d), FOD:%d, AOT:%d, ED:%d\n",
+ 			__func__, pdata->i2c_burstmax, lcdtype, pdata->bringup, pdata->firmware_name,
+@@ -2556,7 +2559,8 @@ static void sec_ts_set_input_prop(struct sec_ts_data *ts, struct input_dev *dev,
+ 	input_set_abs_params(dev, ABS_MT_TOUCH_MINOR, 0, 255, 0, 0);
+ 	input_set_abs_params(dev, ABS_MT_CUSTOM, 0, 0xFFFFFFFF, 0, 0);
+ 	if (ts->plat_data->support_mt_pressure)
+-		input_set_abs_params(dev, ABS_MT_PRESSURE, 0, 255, 0, 0);
++		input_set_abs_params(dev, ABS_MT_PRESSURE, 0,
++					SEC_TS_PRESSURE_MAX, 0, 0);
+ 
+ 	if (propbit == INPUT_PROP_POINTER)
+ 		input_mt_init_slots(dev, MAX_SUPPORT_TOUCH_COUNT, INPUT_MT_POINTER);
+diff --git a/drivers/input/touchscreen/sec_ts/y771/sec_ts.h b/drivers/input/touchscreen/sec_ts/y771/sec_ts.h
+index 11715abdda1a..4282b8a11e43 100644
+--- a/drivers/input/touchscreen/sec_ts/y771/sec_ts.h
++++ b/drivers/input/touchscreen/sec_ts/y771/sec_ts.h
+@@ -110,6 +110,7 @@
+ #define SEC_TS_FW_BLK_SIZE_MAX		(512)
+ #define SEC_TS_FW_BLK_SIZE_DEFAULT	(512)	// y761 & y771 ~
+ #define SEC_TS_SELFTEST_REPORT_SIZE	80
++#define SEC_TS_PRESSURE_MAX		0x3f
+ 
+ #define SEC_TS_FW_HEADER_SIGN		0x53494654
+ #define SEC_TS_FW_CHUNK_SIGN		0x53434654
+@@ -810,6 +811,7 @@ struct sec_ts_data {
+ 	unsigned int scrub_id;
+ 	unsigned int scrub_x;
+ 	unsigned int scrub_y;
++	int fod_pressed;
+ 
+ 	u8 tsp_temp_data;
+ 	bool tsp_temp_data_skip;
+diff --git a/drivers/leds/leds-s2mu106.c b/drivers/leds/leds-s2mu106.c
+index 2b92712a20d1..49ade9461b05 100755
+--- a/drivers/leds/leds-s2mu106.c
++++ b/drivers/leds/leds-s2mu106.c
+@@ -962,10 +962,6 @@ static int s2mu106_led_dt_parse_pdata(struct device *dev,
+ 		pr_err("%s : could not find flashlight_current\n", __func__);
+ 
+ 		//default setting
+-		pdata->flashlight_current[0] = 45;
+-		pdata->flashlight_current[1] = 75;
+-		pdata->flashlight_current[2] = 125;
+-		pdata->flashlight_current[3] = 195;
+ 		pdata->flashlight_current[4] = 270;
+ 	}
+ 
+@@ -1046,36 +1042,11 @@ static ssize_t rear_flash_store(struct device *dev,
+ 		mode = S2MU106_FLED_MODE_OFF;
+ 	} else if (value == 1) {
+ 		mode = S2MU106_FLED_MODE_TORCH;
+-		torch_current = g_fled_data->flashlight_current[0];
+-	} else if (value == 100) {
+-		/* Factory Torch*/
+-		pr_info("%s: factory torch current [%d]\n", __func__, g_fled_data->factory_current);
+-		torch_current = g_fled_data->factory_current;
+-		mode = S2MU106_FLED_MODE_TORCH;
+-	} else if (value == 200) {
+-		/* Factory Flash */
+-		pr_info("%s: factory flash current [%d]\n", __func__, g_fled_data->factory_current);
+-		flash_current = g_fled_data->factory_current;
+-		mode = S2MU106_FLED_MODE_FLASH;
+-	} else if (value <= 1010 && value >= 1001) {
+-		mode = S2MU106_FLED_MODE_TORCH;
+-		/* (value) 1001, 1002, 1004, 1006, 1009 */
+-		if (value <= 1001)
+-			torch_current = g_fled_data->flashlight_current[0];
+-		else if (value <= 1002)
+-			torch_current = g_fled_data->flashlight_current[1];
+-		else if (value <= 1004)
+-			torch_current = g_fled_data->flashlight_current[2];
+-		else if (value <= 1006)
+-			torch_current = g_fled_data->flashlight_current[3];
+-		else if (value <= 1009)
+-			torch_current = g_fled_data->flashlight_current[4];
+-		else
+-			torch_current = g_fled_data->torch_current;
+-		g_fled_data->sysfs_input_data = 1;
++		torch_current = g_fled_data->flashlight_current[4];
+ 	} else if (value == 2) {
+ 		mode = S2MU106_FLED_MODE_FLASH;
+-	}
++		flash_current = g_fled_data->flash_current;
++	} 
+ 
+ 	mutex_lock(&g_fled_data->lock);
+ 	if (g_fled_data->control_mode == CONTROL_I2C) {
+diff --git a/drivers/usb/gadget/function/Makefile b/drivers/usb/gadget/function/Makefile
+index a6d6dea7b4d7..d19a1289981e 100644
+--- a/drivers/usb/gadget/function/Makefile
++++ b/drivers/usb/gadget/function/Makefile
+@@ -51,13 +51,8 @@ usb_f_printer-y			:= f_printer.o
+ obj-$(CONFIG_USB_F_PRINTER)	+= usb_f_printer.o
+ usb_f_tcm-y			:= f_tcm.o
+ obj-$(CONFIG_USB_F_TCM)		+= usb_f_tcm.o
+-ifeq ($(CONFIG_SEC_FACTORY),y)
+ usb_f_mtp-y                     := f_mtp.o
+ obj-$(CONFIG_USB_F_MTP)         += usb_f_mtp.o
+-else
+-usb_f_mtp_samsung-y	            := f_mtp_samsung.o
+-obj-$(CONFIG_USB_F_MTP)         += usb_f_mtp_samsung.o
+-endif
+ usb_f_ptp-y                     := f_ptp.o
+ obj-$(CONFIG_USB_F_PTP)         += usb_f_ptp.o
+ usb_f_audio_source-y            := f_audio_source.o
+diff --git a/drivers/usb/gadget/function/f_mtp_samsung.c b/drivers/usb/gadget/function/f_mtp_samsung.c
+deleted file mode 100644
+index fbf27655a71f..000000000000
+--- a/drivers/usb/gadget/function/f_mtp_samsung.c
++++ /dev/null
+@@ -1,2143 +0,0 @@
+-/*
+- * drivers/usb/gadget/f_mtp_samsung.c
+- *
+- * Function Driver for USB MTP,
+- * f_mtp_samsung.c -- MTP Driver, for MTP development,
+- *
+- * Copyright (C) 2009 by Samsung Electronics,
+- * Author:Deepak M.G. <deepak.guru@samsung.com>,
+- * Author:Madhukar.J  <madhukar.j@samsung.com>,
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- */
+-
+-/*
+- * f_mtp_samsung.c file is the driver for MTP device. Totally three
+- * EndPoints will be configured in which 2 Bulk End Points
+- * and 1 Interrupt End point. This driver will also register as
+- * misc driver and exposes file operation functions to user space.
+- */
+-
+-/* Includes */
+-#include <linux/module.h>
+-#include <linux/init.h>
+-#include <linux/poll.h>
+-#include <linux/delay.h>
+-#include <linux/wait.h>
+-#include <linux/err.h>
+-#include <linux/interrupt.h>
+-#include <linux/types.h>
+-#include <linux/device.h>
+-#include <linux/miscdevice.h>
+-#include <linux/kernel.h>
+-#include <linux/kref.h>
+-#include <linux/spinlock.h>
+-#include <linux/string.h>
+-#include <linux/usb.h>
+-#include <linux/usb_usual.h>
+-#include <linux/usb/ch9.h>
+-#include <linux/usb/composite.h>
+-#include <linux/usb/gadget.h>
+-#include <linux/hardirq.h>
+-#include <linux/sched.h>
+-#include <linux/usb/f_accessory.h>
+-#include <asm-generic/siginfo.h>
+-#include <linux/kernel.h>
+-#include <linux/file.h>
+-#include <linux/configfs.h>
+-#include "f_mtp.h"
+-#include "configfs.h"
+-
+-/*-------------------------------------------------------------------------*/
+-/*Only for Debug*/
+-#define DEBUG_MTP 0
+-/*#define CSY_TEST */
+-
+-#if DEBUG_MTP
+-#define DEBUG_MTP_SETUP
+-#define DEBUG_MTP_READ
+-#define DEBUG_MTP_WRITE
+-
+-#else
+-#undef DEBUG_MTP_SETUP
+-#undef DEBUG_MTP_READ
+-#undef DEBUG_MTP_WRITE
+-#endif
+-
+-/*#define DEBUG_MTP_SETUP*/
+-/*#define DEBUG_MTP_READ*/
+-/*#define DEBUG_MTP_WRITE*/
+-
+-#ifdef DEBUG_MTP_SETUP
+-#define DEBUG_MTPB(fmt, args...) printk(fmt, ##args)
+-#else
+-#define DEBUG_MTPB(fmt, args...) do {} while (0)
+-#endif
+-
+-#ifdef DEBUG_MTP_READ
+-#define DEBUG_MTPR(fmt, args...) printk(fmt, ##args)
+-#else
+-#define DEBUG_MTPR(fmt, args...) do {} while (0)
+-#endif
+-#ifdef DEBUG_MTP_WRITE
+-#define DEBUG_MTPW(fmt, args...) printk(fmt, ##args)
+-#else
+-#define DEBUG_MTPW(fmt, args...) do {} while (0)
+-#endif
+-/*-------------------------------------------------------------------------*/
+-
+-#define MTPG_BULK_BUFFER_SIZE	32768
+-#define MTPG_INTR_BUFFER_SIZE	28
+-
+-/* number of rx and tx requests to allocate */
+-#define MTPG_RX_REQ_MAX				8
+-#define MTPG_MTPG_TX_REQ_MAX		8
+-#define MTPG_INTR_REQ_MAX	5
+-
+-/* ID for Microsoft MTP OS String */
+-#define MTPG_OS_STRING_ID   0xEE
+-
+-#define INTR_BUFFER_SIZE           28
+-
+-#define MAX_INST_NAME_LEN          40
+-
+-#define DRIVER_NAME		 "usb_mtp_gadget"
+-#if IS_ENABLED(CONFIG_USB_CONFIGFS_UEVENT)
+-#define DRIVER_NAME_PTP "ptp"
+-#endif
+-
+-
+-#define MAX_GUID_SIZE	0x28
+-static const char mtpg_longname[] =	"mtp";
+-static const char shortname[] = DRIVER_NAME;
+-static int mtp_pid;
+-
+-char guid_info[MAX_GUID_SIZE+1];
+-/* MTP Device Structure*/
+-struct mtpg_dev {
+-	struct usb_function function;
+-#if IS_ENABLED(CONFIG_USB_CONFIGFS_UEVENT)
+-	struct usb_function function_ptp;
+-#endif
+-	struct usb_composite_dev *cdev;
+-	struct usb_gadget *gadget;
+-
+-	spinlock_t		lock;
+-
+-	u8			config;
+-	int			online;
+-	int			error;
+-	int			read_ready;
+-	struct list_head	tx_idle;
+-	struct list_head	rx_idle;
+-	struct list_head	rx_done;
+-	struct list_head	intr_idle;
+-	wait_queue_head_t	read_wq;
+-	wait_queue_head_t	write_wq;
+-	wait_queue_head_t	intr_wq;
+-
+-	struct usb_request	*read_req;
+-	unsigned char		*read_buf;
+-	unsigned		read_count;
+-
+-	struct usb_ep		*bulk_in;
+-	struct usb_ep		*bulk_out;
+-	struct usb_ep		*int_in;
+-	struct usb_request	*notify_req;
+-
+-	struct workqueue_struct *wq;
+-	struct work_struct read_send_work;
+-	struct file *read_send_file;
+-
+-	int64_t read_send_length;
+-
+-	uint16_t read_send_cmd;
+-	uint32_t read_send_id;
+-	int read_send_result;
+-	atomic_t		read_excl;
+-	atomic_t		write_excl;
+-	atomic_t		ioctl_excl;
+-	atomic_t		open_excl;
+-	atomic_t		wintfd_excl;
+-	char cancel_io_buf[USB_PTPREQUEST_CANCELIO_SIZE+1];
+-	int cancel_io;
+-};
+-
+-/* Global mtpg_dev Structure
+-* the_mtpg variable be used between mtpg_open() and mtpg_function_bind() */
+-static struct mtpg_dev    *the_mtpg;
+-
+-/* Three full-speed and high-speed endpoint descriptors: bulk-in, bulk-out,
+- * and interrupt-in. */
+-
+-struct usb_interface_descriptor mtpg_interface_desc = {
+-	.bLength                = USB_DT_INTERFACE_SIZE,
+-	.bDescriptorType        = USB_DT_INTERFACE,
+-	.bInterfaceNumber       = 0,
+-	.bNumEndpoints          = 3,
+-	.bInterfaceClass        = USB_CLASS_VENDOR_SPEC,
+-	.bInterfaceSubClass     = USB_SUBCLASS_VENDOR_SPEC,
+-	.bInterfaceProtocol     = 0,
+-};
+-
+-static struct usb_interface_descriptor ptp_interface_desc = {
+-	.bLength                = USB_DT_INTERFACE_SIZE,
+-	.bDescriptorType        = USB_DT_INTERFACE,
+-	.bInterfaceNumber       = 0,
+-	.bNumEndpoints          = 3,
+-	.bInterfaceClass        = USB_CLASS_STILL_IMAGE,
+-	.bInterfaceSubClass     = 1,
+-	.bInterfaceProtocol     = 1,
+-};
+-
+-static struct usb_endpoint_descriptor mtpg_superspeed_in_desc = {
+-	.bLength                = USB_DT_ENDPOINT_SIZE,
+-	.bDescriptorType        = USB_DT_ENDPOINT,
+-	.bEndpointAddress       = USB_DIR_IN,
+-	.bmAttributes           = USB_ENDPOINT_XFER_BULK,
+-	.wMaxPacketSize         = __constant_cpu_to_le16(1024),
+-};
+-
+-static struct usb_endpoint_descriptor mtpg_superspeed_out_desc = {
+-	.bLength                = USB_DT_ENDPOINT_SIZE,
+-	.bDescriptorType        = USB_DT_ENDPOINT,
+-	.bEndpointAddress       = USB_DIR_OUT,
+-	.bmAttributes           = USB_ENDPOINT_XFER_BULK,
+-	.wMaxPacketSize         = __constant_cpu_to_le16(1024),
+-};
+-
+-static struct usb_ss_ep_comp_descriptor mtpg_superspeed_bulk_comp_desc = {
+-	.bLength =              sizeof(mtpg_superspeed_bulk_comp_desc),
+-	.bDescriptorType =      USB_DT_SS_ENDPOINT_COMP,
+-
+-	/* the following 2 values can be tweaked if necessary */
+-	.bMaxBurst =         15,
+-	/* .bmAttributes =      0, */
+-};
+-
+-static struct usb_endpoint_descriptor fs_mtpg_in_desc = {
+-	.bLength =		USB_DT_ENDPOINT_SIZE,
+-	.bDescriptorType =	USB_DT_ENDPOINT,
+-	.bEndpointAddress =	USB_DIR_IN,
+-	.bmAttributes =		USB_ENDPOINT_XFER_BULK,
+-	/* wMaxPacketSize set by autoconfiguration */
+-};
+-
+-static struct usb_endpoint_descriptor fs_mtpg_out_desc = {
+-	.bLength =		USB_DT_ENDPOINT_SIZE,
+-	.bDescriptorType =	USB_DT_ENDPOINT,
+-	.bEndpointAddress =	USB_DIR_OUT,
+-	.bmAttributes =		USB_ENDPOINT_XFER_BULK,
+-	/* wMaxPacketSize set by autoconfiguration */
+-};
+-
+-static struct usb_endpoint_descriptor int_fs_notify_desc = {
+-	.bLength =		USB_DT_ENDPOINT_SIZE,
+-	.bDescriptorType =	USB_DT_ENDPOINT,
+-	.bEndpointAddress =	USB_DIR_IN,
+-	.bmAttributes =		USB_ENDPOINT_XFER_INT,
+-	.wMaxPacketSize	= __constant_cpu_to_le16(MTPG_INTR_BUFFER_SIZE),
+-	.bInterval =		6,
+-};
+-
+-static struct usb_descriptor_header *fs_mtpg_desc[] = {
+-	(struct usb_descriptor_header *) &mtpg_interface_desc,
+-	(struct usb_descriptor_header *) &fs_mtpg_in_desc,
+-	(struct usb_descriptor_header *) &fs_mtpg_out_desc,
+-	(struct usb_descriptor_header *) &int_fs_notify_desc,
+-	NULL,
+-};
+-
+-static struct usb_endpoint_descriptor hs_mtpg_in_desc = {
+-	.bLength =		USB_DT_ENDPOINT_SIZE,
+-	.bDescriptorType =	USB_DT_ENDPOINT,
+-	/*bEndpointAddress copied from fs_mtpg_in_desc
+-			during mtpg_function_bind()*/
+-	.bmAttributes =		USB_ENDPOINT_XFER_BULK,
+-	.wMaxPacketSize =	__constant_cpu_to_le16(512),
+-};
+-
+-static struct usb_endpoint_descriptor hs_mtpg_out_desc = {
+-	.bLength =		USB_DT_ENDPOINT_SIZE,
+-	.bDescriptorType =	USB_DT_ENDPOINT,
+-	/*bEndpointAddress copied from fs_mtpg_out_desc
+-			during mtpg_function_bind()*/
+-	.bmAttributes =		USB_ENDPOINT_XFER_BULK,
+-	.wMaxPacketSize =	__constant_cpu_to_le16(512),
+-	.bInterval =		1,	/* NAK every 1 uframe */
+-};
+-
+-static struct usb_endpoint_descriptor int_hs_notify_desc = {
+-	.bLength =		USB_DT_ENDPOINT_SIZE,
+-	.bDescriptorType =	USB_DT_ENDPOINT,
+-	.bEndpointAddress =	USB_DIR_IN,
+-	.bmAttributes =		USB_ENDPOINT_XFER_INT,
+-	.wMaxPacketSize = __constant_cpu_to_le16(MTPG_INTR_BUFFER_SIZE),
+-	.bInterval =		6,
+-};
+-
+-static struct usb_ss_ep_comp_descriptor ss_intr_notify_desc = {
+-	.bLength =		sizeof(ss_intr_notify_desc),
+-	.bDescriptorType =	USB_DT_SS_ENDPOINT_COMP,
+-
+-	/* the following 3 values can be tweaked if necessary */
+-	/* .bMaxBurst =		0, */
+-	/* .bmAttributes =	0, */
+-	.wBytesPerInterval =	__constant_cpu_to_le16(MTPG_INTR_BUFFER_SIZE),
+-};
+-
+-/* In VZW Models size of MTU is fixed using Devguru AVD Descriptor */
+-
+-struct usb_mtp_avd_descriptor {
+-	__u8	bLength;
+-	__u8	bDescriptorType;
+-	__u8	bDescriptorSubType;
+-
+-	__u16	bDAU1_Type;
+-	__u16	bDAU1_Length;
+-	__u8	bDAU1_Value;
+-} __attribute__ ((packed));
+-
+-static struct usb_mtp_avd_descriptor mtp_avd_descriptor = {
+-	.bLength            =   0x08,
+-	.bDescriptorType    =   0x24,
+-	.bDescriptorSubType =   0x80,
+-
+-	/* First DAU = MTU Size */
+-	.bDAU1_Type         =   0x000C,
+-	.bDAU1_Length       =   0x0001,
+-	.bDAU1_Value	= 0x01,
+-};
+-
+-static struct usb_descriptor_header *ss_mtpg_descs[] = {
+-	(struct usb_descriptor_header *) &mtpg_interface_desc,
+-	(struct usb_descriptor_header *) &mtpg_superspeed_in_desc,
+-	(struct usb_descriptor_header *) &mtpg_superspeed_bulk_comp_desc,
+-	(struct usb_descriptor_header *) &mtpg_superspeed_out_desc,
+-	(struct usb_descriptor_header *) &mtpg_superspeed_bulk_comp_desc,
+-	(struct usb_descriptor_header *) &int_hs_notify_desc,
+-	(struct usb_descriptor_header *) &ss_intr_notify_desc,
+-	(struct usb_descriptor_header *) &mtp_avd_descriptor,
+-	NULL,
+-};
+-
+-static struct usb_descriptor_header *hs_mtpg_desc[] = {
+-	(struct usb_descriptor_header *) &mtpg_interface_desc,
+-	(struct usb_descriptor_header *) &hs_mtpg_in_desc,
+-	(struct usb_descriptor_header *) &hs_mtpg_out_desc,
+-	(struct usb_descriptor_header *) &int_hs_notify_desc,
+-	(struct usb_descriptor_header *) &mtp_avd_descriptor,
+-	NULL
+-};
+-
+-
+-static struct usb_descriptor_header *ss_ptpg_descs[] = {
+-	(struct usb_descriptor_header *) &ptp_interface_desc,
+-	(struct usb_descriptor_header *) &mtpg_superspeed_in_desc,
+-	(struct usb_descriptor_header *) &mtpg_superspeed_bulk_comp_desc,
+-	(struct usb_descriptor_header *) &mtpg_superspeed_out_desc,
+-	(struct usb_descriptor_header *) &mtpg_superspeed_bulk_comp_desc,
+-	(struct usb_descriptor_header *) &int_hs_notify_desc,
+-	(struct usb_descriptor_header *) &ss_intr_notify_desc,
+-	(struct usb_descriptor_header *) &mtp_avd_descriptor,
+-	NULL,
+-};
+-
+-
+-static struct usb_descriptor_header *fs_ptp_descs[] = {
+-	(struct usb_descriptor_header *) &ptp_interface_desc,
+-	(struct usb_descriptor_header *) &fs_mtpg_in_desc,
+-	(struct usb_descriptor_header *) &fs_mtpg_out_desc,
+-	(struct usb_descriptor_header *) &int_fs_notify_desc,
+-	(struct usb_descriptor_header *) &mtp_avd_descriptor,
+-	NULL,
+-};
+-
+-static struct usb_descriptor_header *hs_ptp_descs[] = {
+-	(struct usb_descriptor_header *) &ptp_interface_desc,
+-	(struct usb_descriptor_header *) &hs_mtpg_in_desc,
+-	(struct usb_descriptor_header *) &hs_mtpg_out_desc,
+-	(struct usb_descriptor_header *) &int_hs_notify_desc,
+-	(struct usb_descriptor_header *) &mtp_avd_descriptor,
+-	NULL,
+-};
+-
+-/* string IDs are assigned dynamically */
+-#define F_MTP_IDX			0
+-#define STRING_PRODUCT_IDX		1
+-#define STRING_SERIAL_IDX		2
+-
+-/* default serial number takes at least two packets */
+-static const char serial[] = "0123456789.0123456789.0123456789";
+-
+-static struct usb_string strings_dev_mtp[] = {
+-	[F_MTP_IDX].s = "MTP",
+-	[STRING_PRODUCT_IDX].s = mtpg_longname,
+-	[STRING_SERIAL_IDX].s = serial,
+-	{  },			/* end of list */
+-};
+-
+-static struct usb_gadget_strings stringtab_mtp = {
+-	.language	= 0x0409,	/* en-us */
+-	.strings	= strings_dev_mtp,
+-};
+-
+-static struct usb_gadget_strings *mtpg_dev_strings[] = {
+-	&stringtab_mtp,
+-	NULL,
+-};
+-
+-/* Microsoft MTP OS String */
+-static u8 mtpg_os_string[] = {
+-	18, /* sizeof(mtpg_os_string) */
+-	USB_DT_STRING,
+-	/* Signature field: "MSFT100" */
+-	'M', 0, 'S', 0, 'F', 0, 'T', 0, '1', 0, '0', 0, '0', 0,
+-	/* vendor code */
+-	1,
+-	/* padding */
+-	0
+-};
+-
+-/* Microsoft Extended Configuration Descriptor Header Section */
+-struct mtpg_ext_config_desc_header {
+-	__le32	dwLength;
+-	__u16	bcdVersion;
+-	__le16	wIndex;
+-	__u8	bCount;
+-	__u8	reserved[7];
+-};
+-
+-/* Microsoft Extended Configuration Descriptor Function Section */
+-struct mtpg_ext_config_desc_function {
+-	__u8	bFirstInterfaceNumber;
+-	__u8	bInterfaceCount;
+-	__u8	compatibleID[8];
+-	__u8	subCompatibleID[8];
+-	__u8	reserved[6];
+-};
+-
+-/* MTP Extended Configuration Descriptor */
+-struct {
+-	struct mtpg_ext_config_desc_header	header;
+-	struct mtpg_ext_config_desc_function	function;
+-} mtpg_ext_config_desc = {
+-	.header = {
+-		.dwLength = __constant_cpu_to_le32
+-					(sizeof(mtpg_ext_config_desc)),
+-		.bcdVersion = __constant_cpu_to_le16(0x0100),
+-		.wIndex = __constant_cpu_to_le16(4),
+-		.bCount = __constant_cpu_to_le16(1),
+-	},
+-	.function = {
+-		.bFirstInterfaceNumber = 0,
+-		.bInterfaceCount = 1,
+-		.compatibleID = { 'M', 'T', 'P' },
+-	},
+-};
+-
+-struct mtp_instance {
+-	struct usb_function_instance func_inst;
+-	const char *name;
+-	struct mtpg_dev *dev;
+-	char mtp_ext_compat_id[16];
+-	struct usb_os_desc mtp_os_desc;
+-};
+-
+-extern int send_sig_info(int, struct siginfo *, struct task_struct *);
+-
+-#ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
+-/* Function  : Change config for multi configuration
+- * Parameter : int conf_num (config number)
+- *             0 - use mtp only without Samsung USB Driver
+- *             1 - use mtp + acm with Samsung USB Driver
+- * Description
+- *	Below function is for samsung multi configuration
+- *	feature made by soonyong,cho.
+- *	Please add below handler to set_config_desc of function.
+- * Date : 2011-08-03
+- */
+-static int mtp_set_config_desc(int conf_num)
+-{
+-	switch (conf_num) {
+-	case 0:
+-		mtpg_interface_desc.bInterfaceClass =
+-			USB_CLASS_VENDOR_SPEC;
+-		mtpg_interface_desc.bInterfaceSubClass =
+-			USB_SUBCLASS_VENDOR_SPEC;
+-		mtpg_interface_desc.bInterfaceProtocol =
+-			0x0;
+-		break;
+-	case 1:
+-		mtpg_interface_desc.bInterfaceClass =
+-			USB_CLASS_STILL_IMAGE;
+-		mtpg_interface_desc.bInterfaceSubClass =
+-			0x01;
+-		mtpg_interface_desc.bInterfaceProtocol =
+-			0x01;
+-		break;
+-
+-	}
+-	return 1;
+-}
+-#endif
+-
+-/* -------------------------------------------------------------------------
+- *	Main Functionalities Start!
+- * ------------------------------------------------------------------------- */
+-static inline struct mtpg_dev *mtpg_func_to_dev(struct usb_function *f)
+-{
+-#if IS_ENABLED(CONFIG_USB_CONFIGFS_UEVENT)
+-	if (!strcmp(f->name, DRIVER_NAME_PTP))
+-		return container_of(f, struct mtpg_dev, function_ptp);
+-#endif
+-	return container_of(f, struct mtpg_dev, function);
+-}
+-
+-static inline int _lock(atomic_t *excl)
+-{
+-
+-	DEBUG_MTPB("[%s] \tline = [%d]\n", __func__, __LINE__);
+-
+-	if (atomic_inc_return(excl) == 1) {
+-		return 0;
+-	} else {
+-		atomic_dec(excl);
+-		return -1;
+-	}
+-}
+-
+-static inline void _unlock(atomic_t *excl)
+-{
+-	atomic_dec(excl);
+-}
+-
+-/* add a request to the tail of a list */
+-static void mtpg_req_put(struct mtpg_dev *dev, struct list_head *head,
+-						struct usb_request *req)
+-{
+-	unsigned long flags;
+-
+-	DEBUG_MTPB("[%s] \tline = [%d]\n", __func__, __LINE__);
+-
+-	spin_lock_irqsave(&dev->lock, flags);
+-	list_add_tail(&req->list, head);
+-	spin_unlock_irqrestore(&dev->lock, flags);
+-}
+-
+-static ssize_t guid_show(struct device *dev,
+-		struct device_attribute *attr, char *buf)
+-{
+-	pr_info("mtp: [%s]\tline = [%d]\n", __func__, __LINE__);
+-	memcpy(buf, guid_info, MAX_GUID_SIZE);
+-	return MAX_GUID_SIZE;
+-}
+-
+-static ssize_t guid_store(struct device *dev,
+-		struct device_attribute *attr, const char *buf, size_t size)
+-{
+-	int value;
+-
+-	pr_info("mtp: [%s]\tline = [%d]\n", __func__, __LINE__);
+-	if (size > MAX_GUID_SIZE)
+-		return -EINVAL;
+-
+-	value = strlcpy(guid_info, buf, size);
+-	return value;
+-}
+-
+-/* remove a request from the head of a list */
+-static struct usb_request *mtpg_req_get(struct mtpg_dev *dev,
+-						struct list_head *head)
+-{
+-	unsigned long flags;
+-	struct usb_request *req;
+-
+-	DEBUG_MTPB("[%s] \tline = [%d]\n", __func__, __LINE__);
+-
+-	spin_lock_irqsave(&dev->lock, flags);
+-	if (list_empty(head)) {
+-		req = 0;
+-	} else {
+-		req = list_first_entry(head, struct usb_request, list);
+-		list_del(&req->list);
+-	}
+-	spin_unlock_irqrestore(&dev->lock, flags);
+-
+-	return req;
+-}
+-
+-static int mtp_send_signal(int value)
+-{
+-	int ret;
+-	struct siginfo info;
+-	struct task_struct *t;
+-
+-	memset(&info, 0, sizeof(struct siginfo));
+-	info.si_signo = SIG_SETUP;
+-	info.si_code = SI_QUEUE;
+-	info.si_int = value;
+-
+-	if  (!current->nsproxy) {
+-		pr_info("process has gone\n");
+-		return -ENODEV;
+-	}
+-
+-	t = get_pid_task(find_vpid(mtp_pid), PIDTYPE_PID);
+-
+-	if (t == NULL) {
+-		pr_info("no such pid\n");
+-		return -ENODEV;
+-	}
+-
+-	/*send the signal*/
+-	ret = send_sig_info(SIG_SETUP, &info, t);
+-	if (ret < 0) {
+-		pr_err("[%s]error sending signal\n", __func__);
+-		return ret;
+-	}
+-	return 0;
+-
+-}
+-
+-static int mtpg_open(struct inode *ip, struct file *fp)
+-{
+-	pr_info("[%s]\tline = [%d]\n", __func__, __LINE__);
+-
+-	if (_lock(&the_mtpg->open_excl)) {
+-		pr_err("%s fn mtpg device busy\n", __func__);
+-		return -EBUSY;
+-	}
+-
+-	fp->private_data = the_mtpg;
+-
+-	/* clear the error latch */
+-
+-	DEBUG_MTPB("[%s] %s and clearing the error = 0\n", __func__, __func__);
+-
+-	the_mtpg->error = 0;
+-
+-	return 0;
+-}
+-
+-static ssize_t mtpg_read(struct file *fp, char __user *buf,
+-				size_t count, loff_t *pos)
+-{
+-	struct mtpg_dev *dev = fp->private_data;
+-	struct usb_request *req;
+-	int r = count, xfer;
+-	int ret;
+-
+-//	DEBUG_MTPR("[%s] and count = (%d)\n", __func__, count);
+-
+-	if (_lock(&dev->read_excl))
+-		return -EBUSY;
+-
+-	while (!((dev->online || dev->error) && dev->read_ready)) {
+-		DEBUG_MTPR("[%s] and line is = %d\n", __func__, __LINE__);
+-		ret = wait_event_interruptible(dev->read_wq,
+-			((dev->online || dev->error) && dev->read_ready));
+-		if (ret < 0) {
+-			_unlock(&dev->read_excl);
+-			pr_info("[%s]line is = %d,mtp_read ret<0\n",
+-							__func__, __LINE__);
+-			return ret;
+-		}
+-	}
+-
+-	while (count > 0) {
+-		DEBUG_MTPR("[%s] and line is = %d\n", __func__, __LINE__);
+-
+-		if (dev->error) {
+-			r = -EIO;
+-			pr_err("[%s]\t%d:dev->error so break r=%d\n",
+-						__func__, __LINE__, r);
+-			break;
+-		}
+-
+-		/* if we have idle read requests, get them queued */
+-		DEBUG_MTPR("[%s]\t%d: get request\n", __func__, __LINE__);
+-		while ((req = mtpg_req_get(dev, &dev->rx_idle))) {
+-requeue_req:
+-			req->length = MTPG_BULK_BUFFER_SIZE;
+-			DEBUG_MTPR("[%s]\t%d:usb-ep-queue\n",
+-						__func__, __LINE__);
+-			ret = usb_ep_queue(dev->bulk_out, req, GFP_ATOMIC);
+-
+-			DEBUG_MTPR("[%s]\t%d:Endpoint: %s\n",
+-				__func__, __LINE__, dev->bulk_out->name);
+-
+-			if (ret < 0) {
+-				r = -EIO;
+-				dev->error = 1;
+-				mtpg_req_put(dev, &dev->rx_idle, req);
+-				pr_err("[%s]line[%d]FAIL r=%d\n",
+-						__func__, __LINE__, r);
+-				goto fail;
+-			} else {
+-				DEBUG_MTPR("[%s]rx req queue%p\n",
+-							 __func__, req);
+-			}
+-		}
+-
+-		DEBUG_MTPR("[%s]\t%d:read_count = %d\n",
+-				__func__, __LINE__, dev->read_count);
+-
+-		/* if we have data pending, give it to userspace */
+-		if (dev->read_count > 0) {
+-			DEBUG_MTPR("[%s]\t%d: read_count = %d\n",
+-					__func__, __LINE__, dev->read_count);
+-			if (dev->read_count < count)
+-				xfer = dev->read_count;
+-			else
+-				xfer = count;
+-
+-			DEBUG_MTPR("[%s]copy_to_user 0x%x bytes on EP %p\n",
+-				__func__, dev->read_count, dev->bulk_out);
+-
+-			if (copy_to_user(buf, dev->read_buf, xfer)) {
+-				r = -EFAULT;
+-				pr_err("[%s]%d:cpytouer fail r=%d\n",
+-						__func__, __LINE__, r);
+-				break;
+-			}
+-
+-			dev->read_buf += xfer;
+-			dev->read_count -= xfer;
+-			buf += xfer;
+-			count -= xfer;
+-
+-			/* if we've emptied the buffer, release the request */
+-			if (dev->read_count == 0) {
+-				DEBUG_MTPR("[%s] and line is = %d\n",
+-							__func__, __LINE__);
+-				mtpg_req_put(dev, &dev->rx_idle, dev->read_req);
+-				dev->read_req = 0;
+-			}
+-
+-			/*Updating the buffer size and returnung
+-							from mtpg_read */
+-			r = xfer;
+-			DEBUG_MTPR("[%s] \t %d: returning length %d\n",
+-						__func__, __LINE__, r);
+-			goto fail;
+-		}
+-
+-		/* wait for a request to complete */
+-		req = 0;
+-		DEBUG_MTPR("[%s] and line is = %d\n", __func__, __LINE__);
+-		ret = wait_event_interruptible(dev->read_wq,
+-				 ((req = mtpg_req_get(dev, &dev->rx_done))
+-							 || dev->error));
+-		DEBUG_MTPR("[%s]\t%d: dev->error %d and req = %p\n",
+-				 __func__, __LINE__, dev->error, req);
+-
+-		if (req != 0) {
+-			/* if we got a 0-len one we need to put it back into
+-			** service.  if we made it the current read req we'd
+-			** be stuck forever
+-			*/
+-			if (req->actual == 0)
+-				goto requeue_req;
+-
+-			dev->read_req = req;
+-			dev->read_count = req->actual;
+-			dev->read_buf = req->buf;
+-
+-			DEBUG_MTPR("[%s]\t%d: rx_req=%p req->actual=%d\n",
+-					__func__, __LINE__, req, req->actual);
+-		}
+-
+-		if (ret < 0) {
+-			r = ret;
+-			pr_info("[%s]\t%d after ret=%d brk ret=%d\n",
+-						 __func__, __LINE__, ret, r);
+-			break;
+-		}
+-	}
+-
+-fail:
+-	_unlock(&dev->read_excl);
+-	DEBUG_MTPR("[%s]\t%d: RETURNING Back to USpace r=%d\n",
+-						 __func__, __LINE__, r);
+-	return r;
+-
+-}
+-
+-static ssize_t mtpg_write(struct file *fp, const char __user *buf,
+-				 size_t count, loff_t *pos)
+-{
+-	struct mtpg_dev *dev = fp->private_data;
+-	struct usb_request *req = 0;
+-	int r = count, xfer;
+-	int ret;
+-
+-
+-	DEBUG_MTPW("[%s] \t%d ep bulk_out name = %s\n",
+-			__func__, __LINE__, dev->bulk_out->name);
+-
+-	if (_lock(&dev->write_excl))
+-		return -EBUSY;
+-
+-	while (count > 0) {
+-		if (dev->error) {
+-			r = -EIO;
+-			pr_info("[%s]%d count>0 dev->error so brk\n",
+-							 __func__, __LINE__);
+-			break;
+-		}
+-
+-		/* get an idle tx request to use */
+-		req = 0;
+-		ret = wait_event_interruptible(dev->write_wq,
+-				((req = mtpg_req_get(dev, &dev->tx_idle))
+-							|| dev->error));
+-
+-		if (dev->error) {
+-			r = -EIO;
+-			pr_info("[%s]%d dev->error so brk\n",
+-							 __func__, __LINE__);
+-			break;
+-		}
+-
+-		if (ret < 0) {
+-			r = ret;
+-			pr_info("[%s]\t%d ret = %d\n",
+-						 __func__, __LINE__, r);
+-			break;
+-		}
+-
+-		if (req != 0) {
+-			if (count > MTPG_BULK_BUFFER_SIZE)
+-				xfer = MTPG_BULK_BUFFER_SIZE;
+-			else
+-				xfer = count;
+-
+-			DEBUG_MTPW("[%s]\t%d copy_from_user length %d\n",
+-						__func__, __LINE__, xfer);
+-
+-			if (copy_from_user(req->buf, buf, xfer)) {
+-				pr_err("mtpwrite cpyfrmusr error\n");
+-				r = -EFAULT;
+-				break;
+-			}
+-
+-			req->length = xfer;
+-			ret = usb_ep_queue(dev->bulk_in, req, GFP_ATOMIC);
+-			if (ret < 0) {
+-				dev->error = 1;
+-				r = -EIO;
+-			pr_err("[%s]\t%d ep_que ret=%d brk ret=%d\n",
+-						__func__, __LINE__, ret, r);
+-				break;
+-			}
+-
+-			buf += xfer;
+-			count -= xfer;
+-
+-			/* zero this so we don't try to free it on error exit */
+-			req = 0;
+-			}
+-	}
+-
+-	if (req) {
+-		DEBUG_MTPW("[%s] \t%d  mtpg_req_put\n", __func__, __LINE__);
+-		mtpg_req_put(dev, &dev->tx_idle, req);
+-	}
+-
+-	_unlock(&dev->write_excl);
+-
+-	DEBUG_MTPW("[%s]\t%d  RETURN back to USpace r=%d\n",
+-					 __func__, __LINE__, r);
+-	return r;
+-}
+-/*
+-static void interrupt_complete(struct usb_ep *ep, struct usb_request *req)
+-{
+-	pr_info("Finished Writing Interrupt Data\n");
+-}
+-*/
+-static ssize_t interrupt_write(struct file *fd,
+-			struct mtp_event *event, size_t count)
+-{
+-	struct mtpg_dev *dev = fd->private_data;
+-	struct usb_request *req = 0;
+-	int  ret;
+-
+-	DEBUG_MTPB("[%s] \tline = [%d]\n", __func__, __LINE__);
+-
+-	if (count > MTPG_INTR_BUFFER_SIZE)
+-		return -EINVAL;
+-
+-	ret = wait_event_interruptible_timeout(dev->intr_wq,
+-		(req = mtpg_req_get(dev, &dev->intr_idle)),
+-						msecs_to_jiffies(1000));
+-
+-	if (!req) {
+-		pr_err("[%s]Alloc has failed\n", __func__);
+-		return -ENOMEM;
+-	}
+-
+-	if (copy_from_user(req->buf, (void __user *)event->data, count)) {
+-		mtpg_req_put(dev, &dev->intr_idle, req);
+-		pr_err("[%s]copy from user has failed\n", __func__);
+-		return -EIO;
+-	}
+-
+-	req->length = (unsigned)count;
+-	/*req->complete = interrupt_complete;*/
+-
+-	ret = usb_ep_queue(dev->int_in, req, GFP_KERNEL);
+-
+-	if (ret) {
+-		pr_err("[%s:%d]\n", __func__, __LINE__);
+-		mtpg_req_put(dev, &dev->intr_idle, req);
+-	}
+-
+-	DEBUG_MTPB("[%s] \tline = [%d] returning ret is %d\\n",
+-						__func__, __LINE__, ret);
+-	return ret;
+-}
+-static void mtp_complete_ep0_transection(struct usb_ep *ep, struct usb_request *req)
+-{
+-	if (req->status || req->actual != req->length)
+-		DEBUG_MTPB("[%s]\tline = [%d]\n", __func__, __LINE__);
+-}
+-
+-static void read_send_work(struct work_struct *work)
+-{
+-	struct mtpg_dev	*dev = container_of(work, struct mtpg_dev,
+-							read_send_work);
+-	//struct usb_composite_dev *cdev = dev->cdev;
+-	struct usb_request *req = 0;
+-	struct usb_container_header *hdr;
+-	struct file *file;
+-	loff_t file_pos = 0;
+-	int64_t count = 0;
+-	int xfer = 0;
+-	int ret = -1;
+-	int64_t hdr_length = 0;
+-	int r = 0;
+-	int ZLP_flag = 0;
+-
+-	/* read our parameters */
+-	smp_rmb();
+-	file = dev->read_send_file;
+-	count = dev->read_send_length;
+-	hdr_length = sizeof(struct usb_container_header);
+-	count += hdr_length;
+-
+-	pr_info("[%s:%d] offset=[%lld]\t leth+hder=[%lld]\n",
+-					 __func__, __LINE__, file_pos, count);
+-
+-	if (count < 0) {
+-		r = -EIO;
+-		pr_err("[%s]\t%d ret = %d\n",
+-						 __func__, __LINE__, r);
+-		}
+-
+-	/* Zero Length Packet should be sent if the last trasfer
+-	 * size is equals to the max packet size.
+-	 */
+-	if ((count & (dev->bulk_in->maxpacket - 1)) == 0)
+-		ZLP_flag = 1;
+-
+-	while (count > 0 || ZLP_flag) {
+-		/*Breaking the loop after sending Zero Length Packet*/
+-		if (count == 0)
+-			ZLP_flag = 0;
+-
+-		if (dev->cancel_io == 1) {
+-			dev->cancel_io = 0; /*reported to user space*/
+-			r = -EIO;
+-			pr_info("[%s]\t%d ret = %d\n",
+-						__func__, __LINE__, r);
+-			break;
+-		}
+-		/* get an idle tx request to use */
+-		req = 0;
+-		ret = wait_event_interruptible(dev->write_wq,
+-				((req = mtpg_req_get(dev, &dev->tx_idle))
+-							|| dev->error));
+-		if (ret < 0 || !req) {
+-			r = ret;
+-			pr_info("[%s]\t%d ret = %d\n",
+-						__func__, __LINE__, r);
+-			break;
+-		}
+-
+-		if (count > MTPG_BULK_BUFFER_SIZE)
+-			xfer = MTPG_BULK_BUFFER_SIZE;
+-		else
+-			xfer = count;
+-
+-		if (hdr_length) {
+-			hdr = (struct usb_container_header *)req->buf;
+-			hdr->Length = __cpu_to_le32(count);
+-			hdr->Type = __cpu_to_le16(2);
+-			hdr->Code = __cpu_to_le16(dev->read_send_cmd);
+-			hdr->TransactionID = __cpu_to_le32(dev->read_send_id);
+-		}
+-
+-		ret = vfs_read(file, req->buf + hdr_length,
+-					xfer - hdr_length, &file_pos);
+-		if (ret < 0 || !req) {
+-			r = ret;
+-			pr_info("[%s]\t%d ret = %d\n",
+-						 __func__, __LINE__, r);
+-			break;
+-		}
+-		xfer = ret + hdr_length;
+-		hdr_length = 0;
+-
+-		req->length = xfer;
+-		ret = usb_ep_queue(dev->bulk_in, req, GFP_KERNEL);
+-		if (ret < 0 || !req) {
+-			dev->error = 1;
+-			r = -EIO;
+-			pr_info("[%s]\t%d ret = %d\n",
+-						 __func__, __LINE__, r);
+-			break;
+-		}
+-
+-		count -= xfer;
+-
+-		req = 0;
+-	}
+-
+-	if (req)
+-		mtpg_req_put(dev, &dev->tx_idle, req);
+-
+-	DEBUG_MTPB("[%s] \tline = [%d] \t r = [%d]\n", __func__, __LINE__, r);
+-
+-	dev->read_send_result = r;
+-	smp_wmb();
+-}
+-
+-static long  mtpg_ioctl(struct file *fd, unsigned int code, unsigned long arg)
+-{
+-	struct mtpg_dev		*dev = fd->private_data;
+-	struct mtp_event        event;
+-	struct usb_composite_dev *cdev;
+-	struct usb_request	*req;
+-	int status = 0;
+-	int size = 0;
+-	int ret_value = 0;
+-	int max_pkt = 0;
+-	char *buf_ptr = NULL;
+-	char buf[USB_PTPREQUEST_GETSTATUS_SIZE+1] = {0};
+-
+-	cdev = dev->cdev;
+-	if (!cdev) {
+-		pr_err("usb: %s cdev not ready\n", __func__);
+-		return -EAGAIN;
+-	}
+-	req = cdev->req;
+-	if (!cdev->req) {
+-		pr_err("usb: %s cdev->req not ready\n", __func__);
+-		return -EAGAIN;
+-	}
+-
+-	DEBUG_MTPB("[%s] \tline = [%d]\n", __func__, __LINE__);
+-
+-	switch (code) {
+-	case MTP_ONLY_ENABLE:
+-		pr_info("[%s:%d] MTP_ONLY_ENABLE ioctl:\n",
+-							 __func__, __LINE__);
+-		if (dev->cdev && dev->cdev->gadget) {
+-			usb_gadget_disconnect(cdev->gadget);
+-			pr_info("[%s:%d] B4 disconectng gadget\n",
+-							__func__, __LINE__);
+-			msleep(400);
+-			usb_gadget_connect(cdev->gadget);
+-			pr_info("[%s:%d] after usb_gadget_connect\n",
+-							__func__, __LINE__);
+-		}
+-		status = 10;
+-		pr_info("[%s:%d] MTP_ONLY_ENABLE clearing error 0\n",
+-							__func__, __LINE__);
+-		the_mtpg->error = 0;
+-		break;
+-	case MTP_DISABLE:
+-		/*mtp_function_enable(mtp_disable_desc);*/
+-		if (dev->cdev && dev->cdev->gadget) {
+-			usb_gadget_disconnect(dev->cdev->gadget);
+-			mdelay(5);
+-			usb_gadget_connect(dev->cdev->gadget);
+-		}
+-		break;
+-	case MTP_CLEAR_HALT:
+-		status = usb_ep_clear_halt(dev->bulk_in);
+-		status = usb_ep_clear_halt(dev->bulk_out);
+-		break;
+-	case MTP_WRITE_INT_DATA:
+-		pr_info("[%s]\t%d MTP intrpt_Write no slep\n",
+-						__func__, __LINE__);
+-		if (copy_from_user(&event, (void __user *)arg, sizeof(event))) {
+-			status = -EFAULT;
+-			pr_err("[%s]\t%d:copyfrmuser fail\n",
+-							 __func__, __LINE__);
+-			break;
+-		}
+-		ret_value = interrupt_write(fd, &event, MTP_MAX_PACKET_LEN_FROM_APP);
+-		if (ret_value < 0) {
+-			pr_err("[%s]\t%d interptFD failed\n",
+-							 __func__, __LINE__);
+-			status = -EIO;
+-		} else {
+-			pr_info("[%s]\t%d intruptFD suces\n",
+-							 __func__, __LINE__);
+-			status = MTP_MAX_PACKET_LEN_FROM_APP;
+-		}
+-		break;
+-
+-	case SET_MTP_USER_PID:
+-		mtp_pid = arg;
+-		pr_info("[%s]SET_MTP_USER_PID;pid=%d\tline=[%d]\n",
+-						 __func__, mtp_pid, __LINE__);
+-		break;
+-
+-	case GET_SETUP_DATA:
+-		buf_ptr = (char *)arg;
+-		pr_info("[%s] GET_SETUP_DATA\tline = [%d]\n",
+-						__func__, __LINE__);
+-		if (copy_to_user(buf_ptr, dev->cancel_io_buf,
+-				USB_PTPREQUEST_CANCELIO_SIZE)) {
+-			status = -EIO;
+-			pr_err("[%s]\t%d:coptousr failed\n",
+-							 __func__, __LINE__);
+-		}
+-		break;
+-
+-	case SEND_RESET_ACK:
+-		/*req->zero = 1;*/
+-		req->length = 0;
+-		/*pr_info("[%s]SEND_RESET_ACK and usb_ep_queu
+-				ZERO data size = %d\tline=[%d]\n",
+-					__func__, size, __LINE__);*/
+-		req->complete = mtp_complete_ep0_transection;
+-		status = usb_ep_queue(cdev->gadget->ep0,
+-						req, GFP_ATOMIC);
+-		if (status < 0)
+-			pr_err("[%s]ep_queue line = [%d]\n",
+-							 __func__, __LINE__);
+-		break;
+-
+-	case SET_SETUP_DATA:
+-		buf_ptr = (char *)arg;
+-		if (copy_from_user(buf, buf_ptr,
+-				USB_PTPREQUEST_GETSTATUS_SIZE)) {
+-			status = -EIO;
+-			pr_err("[%s]\t%d:copyfrmuser fail\n",
+-							 __func__, __LINE__);
+-			break;
+-		}
+-		size = buf[0];
+-		pr_info("[%s]SET_SETUP_DATA size=%d line=[%d]\n",
+-						 __func__, size, __LINE__);
+-						 
+-		if (size < 0) {
+-			status = -EIO;
+-			printk(KERN_ERR "[%s]\t%d:size is negative\n",
+-							 __func__, __LINE__);
+-			break;
+-		}				 
+-
+-		if (size > USB_PTPREQUEST_GETSTATUS_SIZE) {
+-			size = USB_PTPREQUEST_GETSTATUS_SIZE;
+-		}
+-
+-		memcpy(req->buf, buf, size);
+-		req->zero = 0;
+-		req->length = size;
+-		req->complete = mtp_complete_ep0_transection;
+-		status = usb_ep_queue(cdev->gadget->ep0, req,
+-							GFP_ATOMIC);
+-		if (status < 0)
+-			pr_err("[%s]usbepqueue line=[%d]\n",
+-							 __func__, __LINE__);
+-		break;
+-
+-	case SET_ZLP_DATA:
+-		/*req->zero = 1;*/
+-		req = mtpg_req_get(dev, &dev->tx_idle);
+-		if (!req) {
+-			pr_info("[%s] Failed to get ZLP_DATA\n",
+-						 __func__);
+-			return -EAGAIN;
+-		}
+-		req->length = 0;
+-		pr_info("[%s]ZLP_DATA data=%d\tline=[%d]\n",
+-						 __func__, size, __LINE__);
+-		status = usb_ep_queue(dev->bulk_in, req, GFP_ATOMIC);
+-		if (status < 0) {
+-			pr_err("[%s]usbepqueue line=[%d]\n",
+-							 __func__, __LINE__);
+-		} else {
+-			pr_info("%sZLPstatus=%d\tline=%d\n",
+-						__func__, __LINE__, status);
+-			status = 20;
+-		}
+-		break;
+-
+-	case GET_HIGH_FULL_SPEED:
+-		pr_info("[%s]GET_HIGH_FULLSPEED line=[%d]\n",
+-							 __func__, __LINE__);
+-		max_pkt = dev->bulk_in->maxpacket;
+-		pr_info("[%s] line = %d max_pkt = [%d]\n",
+-						 __func__, __LINE__, max_pkt);
+-		status = max_pkt;
+-		break;
+-	case SEND_FILE_WITH_HEADER:
+-	{
+-		struct read_send_info	info;
+-		struct work_struct *work;
+-		struct file *file = NULL;
+-
+-		if (_lock(&dev->ioctl_excl)){
+-			status = -EBUSY;
+-			goto exit;
+-		}
+-
+-		pr_info("[%s]SEND_FILE_WITH_HEADER line=[%d]\n",
+-							__func__, __LINE__);
+-
+-		if (copy_from_user(&info, (void __user *)arg, sizeof(info))) {
+-			status = -EFAULT;
+-			_unlock(&dev->ioctl_excl);
+-			goto exit;
+-		}
+-
+-		file = fget(info.Fd);
+-		if (!file) {
+-			status = -EBADF;
+-			_unlock(&dev->ioctl_excl);
+-			pr_info("[%s] line=[%d] bad file number\n",
+-							__func__, __LINE__);
+-			goto exit;
+-		}
+-
+-		dev->read_send_file = file;
+-		dev->read_send_length = info.Length;
+-		smp_wmb();
+-
+-		work = &dev->read_send_work;
+-		dev->read_send_cmd = info.Code;
+-		dev->read_send_id = info.TransactionID;
+-		queue_work(dev->wq, work);
+-		/* Wait for the work to be complted on work queue */
+-		flush_workqueue(dev->wq);
+-
+-		fput(file);
+-
+-		smp_rmb();
+-		status = dev->read_send_result;
+-		_unlock(&dev->ioctl_excl);
+-		break;
+-	}
+-	case MTP_VBUS_DISABLE:
+-		pr_info("[%s] line=[%d]\n", __func__, __LINE__);
+-		if (dev->cdev && dev->cdev->gadget) {
+-			usb_gadget_vbus_disconnect(cdev->gadget);
+-			pr_info("Restricted policy so disconnecting mtp gadget\n");
+-		}
+-		break;
+-	default:
+-		status = -ENOTTY;
+-	}
+-exit:
+-	return status;
+-}
+-
+-#ifdef CONFIG_COMPAT  //2014.11.12 for 64bit kernel & 32bit platform
+-static long mtpg_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+-{
+-	int ret;
+-
+-	ret = mtpg_ioctl(file, cmd, (unsigned long)compat_ptr(arg));
+-	return ret;
+-}
+-#endif
+-
+-static int mtpg_release_device(struct inode *ip, struct file *fp)
+-{
+-	pr_info("[%s]\tline = [%d]\n", __func__, __LINE__);
+-	if (the_mtpg != NULL)
+-		_unlock(&the_mtpg->open_excl);
+-	return 0;
+-}
+-
+-/* file operations for MTP device /dev/usb_mtp_gadget */
+-static const struct file_operations mtpg_fops = {
+-	.owner   = THIS_MODULE,
+-	.read    = mtpg_read,
+-	.write   = mtpg_write,
+-	.open    = mtpg_open,
+-	.unlocked_ioctl = mtpg_ioctl,
+-	.release = mtpg_release_device,
+-#ifdef CONFIG_COMPAT
+-	.compat_ioctl =   mtpg_compat_ioctl,
+-#endif
+-};
+-
+-static struct miscdevice mtpg_device = {
+-	.minor = MISC_DYNAMIC_MINOR,
+-	.name = shortname,
+-	.fops = &mtpg_fops,
+-};
+-
+-struct usb_request *mtp_alloc_ep_req(struct usb_ep *ep,
+-			unsigned len, gfp_t kmalloc_flags)
+-{
+-	struct usb_request	*req;
+-
+-	DEBUG_MTPB("[%s] \tline = [%d]\n", __func__, __LINE__);
+-	req = usb_ep_alloc_request(ep, GFP_ATOMIC);
+-	if (req) {
+-		req->length = len;
+-		req->buf = kmalloc(len, GFP_ATOMIC);
+-		if (!req->buf) {
+-			usb_ep_free_request(ep, req);
+-			req = NULL;
+-		}
+-	}
+-	return req;
+-}
+-
+-static void mtpg_request_free(struct usb_request *req, struct usb_ep *ep)
+-{
+-
+-	DEBUG_MTPB("[%s] \tline = [%d]\n", __func__, __LINE__);
+-	if (req) {
+-		kfree(req->buf);
+-		usb_ep_free_request(ep, req);
+-	}
+-}
+-
+-static struct usb_request *mtpg_request_new(struct usb_ep *ep, int buffer_size)
+-{
+-
+-	struct usb_request *req = usb_ep_alloc_request(ep, GFP_KERNEL);
+-
+-	DEBUG_MTPB("[%s] \tline = [%d]\n", __func__, __LINE__);
+-	if (!req) {
+-		pr_err("[%s]\tline %d ERROR\n", __func__, __LINE__);
+-		return NULL;
+-	}
+-
+-	/* now allocate buffers for the requests */
+-	req->buf = kmalloc(buffer_size, GFP_KERNEL);
+-	if (!req->buf) {
+-		usb_ep_free_request(ep, req);
+-		return NULL;
+-	}
+-
+-	return req;
+-}
+-
+-static void mtpg_complete_in(struct usb_ep *ep, struct usb_request *req)
+-{
+-	struct mtpg_dev *dev = the_mtpg;
+-
+-	DEBUG_MTPB("[%s]\t %d req->status is = %d\n",
+-			__func__, __LINE__, req->status);
+-
+-	if (req->status != 0)
+-		dev->error = 1;
+-
+-	mtpg_req_put(dev, &dev->tx_idle, req);
+-	wake_up(&dev->write_wq);
+-}
+-
+-static void mtpg_complete_out(struct usb_ep *ep, struct usb_request *req)
+-{
+-	struct mtpg_dev *dev = the_mtpg;
+-
+-	DEBUG_MTPB("[%s]\tline = [%d]req->status is = %d\n",
+-				__func__, __LINE__, req->status);
+-	if (req->status != 0) {
+-		dev->error = 1;
+-
+-		DEBUG_MTPB("[%s]\t%d dev->error is=%d for rx_idle\n",
+-					 __func__, __LINE__, dev->error);
+-		mtpg_req_put(dev, &dev->rx_idle, req);
+-	} else {
+-		DEBUG_MTPB("[%s]\t%d for rx_done\n", __func__, __LINE__);
+-		mtpg_req_put(dev, &dev->rx_done, req);
+-	}
+-	wake_up(&dev->read_wq);
+-}
+-
+-static void mtpg_complete_intr(struct usb_ep *ep, struct usb_request *req)
+-{
+-	struct mtpg_dev *dev = the_mtpg;
+-	/*pr_info("[%s]\tline = [%d]\n", __func__, __LINE__);*/
+-
+-	if (req->status != 0)
+-		dev->error = 1;
+-
+-	mtpg_req_put(dev, &dev->intr_idle, req);
+-
+-	wake_up(&dev->intr_wq);
+-}
+-static DEVICE_ATTR(guid,  S_IRUGO | S_IWUSR,
+-		guid_show, guid_store);
+-static void
+-mtpg_function_unbind(struct usb_configuration *c, struct usb_function *f)
+-{
+-	struct mtpg_dev	*dev = mtpg_func_to_dev(f);
+-	struct usb_request *req;
+-
+-	pr_info("[%s]\tline = [%d]\n", __func__, __LINE__);
+-
+-	strings_dev_mtp[F_MTP_IDX].id = 0;
+-	while ((req = mtpg_req_get(dev, &dev->rx_idle)))
+-		mtpg_request_free(req, dev->bulk_out);
+-
+-	while ((req = mtpg_req_get(dev, &dev->tx_idle)))
+-		mtpg_request_free(req, dev->bulk_in);
+-
+-	while ((req = mtpg_req_get(dev, &dev->intr_idle)))
+-		mtpg_request_free(req, dev->int_in);
+-	memset(guid_info, 0, sizeof(guid_info));
+-	//pr_info("mtp: %s guid after reset = %s\n", __func__, guid_info);
+-}
+-
+-static int
+-mtpg_function_bind(struct usb_configuration *c, struct usb_function *f)
+-{
+-	struct usb_composite_dev *cdev	= c->cdev;
+-	struct mtpg_dev	*mtpg	= mtpg_func_to_dev(f);
+-	struct usb_request	*req;
+-	struct usb_ep		*ep;
+-	int			i, id;
+-	int			status = 0;
+-
+-	/* Allocate string descriptor numbers ... note that string
+-	 * contents can be overridden by the composite_dev glue.
+-	 */
+-
+-	pr_info("[%s]\tline = [%d]\n", __func__, __LINE__);
+-	id = usb_interface_id(c, f);
+-	if (id < 0) {
+-		pr_err("[%s]Error in usb_interface_id\n", __func__);
+-		return id;
+-	}
+-
+-	mtpg_interface_desc.bInterfaceNumber = id;
+-
+-	if (strings_dev_mtp[F_MTP_IDX].id == 0) {
+-		status = usb_string_id(c->cdev);
+-		if (status < 0)
+-			return status;
+-		strings_dev_mtp[F_MTP_IDX].id = status;
+-		mtpg_interface_desc.iInterface = status;
+-	}
+-
+-	ep = usb_ep_autoconfig(cdev->gadget, &fs_mtpg_in_desc);
+-	if (!ep) {
+-		pr_err("[%s]Error usb_ep_autoconfig IN\n", __func__);
+-		goto autoconf_fail;
+-	}
+-	ep->driver_data = mtpg;		/* claim the endpoint */
+-	mtpg->bulk_in = ep;
+-	the_mtpg->bulk_in = ep;
+-
+-	ep = usb_ep_autoconfig(cdev->gadget, &fs_mtpg_out_desc);
+-	if (!ep) {
+-		pr_err("[%s]Error usb_ep_autoconfig OUT\n", __func__);
+-		goto autoconf_fail;
+-	}
+-	ep->driver_data = mtpg;		/* claim the endpoint */
+-	mtpg->bulk_out = ep;
+-	the_mtpg->bulk_out = ep;
+-
+-	/* Interrupt Support for MTP */
+-	ep = usb_ep_autoconfig(cdev->gadget, &int_fs_notify_desc);
+-	if (!ep) {
+-		pr_err("[%s]Error usb_ep_autoconfig INT\n", __func__);
+-		goto autoconf_fail;
+-	}
+-	ep->driver_data = mtpg;
+-	mtpg->int_in = ep;
+-	the_mtpg->int_in = ep;
+-
+-	for (i = 0; i < MTPG_INTR_REQ_MAX; i++) {
+-		req = mtpg_request_new(mtpg->int_in, MTPG_INTR_BUFFER_SIZE);
+-		if (!req)
+-			goto out;
+-		req->complete = mtpg_complete_intr;
+-		mtpg_req_put(mtpg, &mtpg->intr_idle, req);
+-	}
+-	for (i = 0; i < MTPG_RX_REQ_MAX; i++) {
+-		req = mtpg_request_new(mtpg->bulk_out, MTPG_BULK_BUFFER_SIZE);
+-		if (!req)
+-			goto out;
+-		req->complete = mtpg_complete_out;
+-		mtpg_req_put(mtpg, &mtpg->rx_idle, req);
+-	}
+-
+-	for (i = 0; i < MTPG_MTPG_TX_REQ_MAX; i++) {
+-		req = mtpg_request_new(mtpg->bulk_in, MTPG_BULK_BUFFER_SIZE);
+-		if (!req)
+-			goto out;
+-		req->complete = mtpg_complete_in;
+-		mtpg_req_put(mtpg, &mtpg->tx_idle, req);
+-	}
+-
+-	if (gadget_is_dualspeed(cdev->gadget)) {
+-
+-		DEBUG_MTPB("[%s]\tdual speed line = [%d]\n",
+-						__func__, __LINE__);
+-
+-		/* Assume endpoint addresses are the same for both speeds */
+-		hs_mtpg_in_desc.bEndpointAddress =
+-				fs_mtpg_in_desc.bEndpointAddress;
+-		hs_mtpg_out_desc.bEndpointAddress =
+-				fs_mtpg_out_desc.bEndpointAddress;
+-		int_hs_notify_desc.bEndpointAddress =
+-				int_fs_notify_desc.bEndpointAddress;
+-	}
+-
+-	if (gadget_is_superspeed(c->cdev->gadget)) {
+-		DEBUG_MTPB("[%s]\tdual speed line = [%d]\n",
+-						__func__, __LINE__);
+-		mtpg_superspeed_in_desc.bEndpointAddress =
+-				fs_mtpg_in_desc.bEndpointAddress;
+-		mtpg_superspeed_out_desc.bEndpointAddress =
+-				fs_mtpg_out_desc.bEndpointAddress;
+-	}
+-	pr_info("%s speed %s: IN/%s, OUT/%s\n",
+-			gadget_is_superspeed(c->cdev->gadget) ? "super" :
+-			gadget_is_dualspeed(c->cdev->gadget) ? "dual" : "full",
+-			f->name, mtpg->bulk_in->name, mtpg->bulk_out->name);
+-
+-	mtpg->cdev = cdev;
+-	the_mtpg->cdev = cdev;
+-	return 0;
+-
+-autoconf_fail:
+-	pr_err("mtpg unable to autoconfigure all endpoints\n");
+-	return -ENOTSUPP;
+-out:
+-	mtpg_function_unbind(c, f);
+-	return -1;
+-}
+-
+-static int mtpg_function_set_alt(struct usb_function *f,
+-		unsigned intf, unsigned alt)
+-{
+-	struct mtpg_dev	*dev = mtpg_func_to_dev(f);
+-	struct usb_composite_dev *cdev = f->config->cdev;
+-	int ret;
+-
+-	if (dev->int_in->driver_data)
+-		usb_ep_disable(dev->int_in);
+-
+-	ret = config_ep_by_speed(cdev->gadget, f, dev->int_in);
+-	if (ret) {
+-		dev->int_in->desc = NULL;
+-		ERROR(cdev, "config_ep_by_speed failes for ep %s, result %d\n",
+-			dev->int_in->name, ret);
+-		return ret;
+-	}
+-	ret = usb_ep_enable(dev->int_in);
+-	if (ret) {
+-		ERROR(cdev, "failed to enable ep %s, result %d\n",
+-			dev->int_in->name, ret);
+-		return ret;
+-	}
+-	dev->int_in->driver_data = dev;
+-
+-	if (dev->bulk_in->driver_data)
+-		usb_ep_disable(dev->bulk_in);
+-
+-	ret = config_ep_by_speed(cdev->gadget, f, dev->bulk_in);
+-	if (ret) {
+-		dev->bulk_in->desc = NULL;
+-		ERROR(cdev, "config_ep_by_speed failes for ep %s, result %d\n",
+-			dev->bulk_in->name, ret);
+-		return ret;
+-	}
+-	ret = usb_ep_enable(dev->bulk_in);
+-	if (ret) {
+-		ERROR(cdev, "failed to enable ep %s, result %d\n",
+-			dev->bulk_in->name, ret);
+-		return ret;
+-	}
+-	dev->bulk_in->driver_data = dev;
+-
+-	if (dev->bulk_out->driver_data)
+-		usb_ep_disable(dev->bulk_out);
+-
+-	ret = config_ep_by_speed(cdev->gadget, f, dev->bulk_out);
+-	if (ret) {
+-		dev->bulk_out->desc = NULL;
+-		ERROR(cdev, "config_ep_by_speed failes for ep %s, result %d\n",
+-			dev->bulk_out->name, ret);
+-		return ret;
+-	}
+-	ret = usb_ep_enable(dev->bulk_out);
+-	if (ret) {
+-		ERROR(cdev, "failed to enable ep %s, result %d\n",
+-			dev->bulk_out->name, ret);
+-		return ret;
+-	}
+-	dev->bulk_out->driver_data = dev;
+-
+-	dev->online = 1;
+-	dev->error = 0;
+-	dev->read_ready = 1;
+-	dev->cancel_io = 0;
+-
+-	/* readers may be blocked waiting for us to go online */
+-	wake_up(&dev->read_wq);
+-
+-	return 0;
+-}
+-
+-static void mtpg_function_disable(struct usb_function *f)
+-{
+-	struct mtpg_dev	*dev = mtpg_func_to_dev(f);
+-
+-	pr_info("[%s]\tline = [%d]\n", __func__, __LINE__);
+-	memset(guid_info, 0, sizeof(guid_info));
+-	//pr_info("mtp: %s guid after reset = %s\n", __func__, guid_info);
+-
+-	dev->online = 0;
+-	dev->error = 1;
+-
+-	usb_ep_disable(dev->int_in);
+-	dev->int_in->driver_data = NULL;
+-
+-	usb_ep_disable(dev->bulk_in);
+-	dev->bulk_in->driver_data = NULL;
+-
+-	usb_ep_disable(dev->bulk_out);
+-	dev->bulk_out->driver_data = NULL;
+-
+-	wake_up(&dev->read_wq);
+-}
+-
+-
+-/*PIMA15740-2000 spec: Class specific setup request for MTP*/
+-static void
+-mtp_complete_cancel_io(struct usb_ep *ep, struct usb_request *req)
+-{
+-	int i;
+-	struct mtpg_dev	*dev = ep->driver_data;
+-
+-	DEBUG_MTPB("[%s]\tline = [%d]\n", __func__, __LINE__);
+-	if (req->status != 0) {
+-		DEBUG_MTPB("[%s]req->status !=0\tline = [%d]\n",
+-						 __func__, __LINE__);
+-		return;
+-	}
+-
+-	if (req->actual != USB_PTPREQUEST_CANCELIO_SIZE) {
+-		DEBUG_MTPB("[%s]USB_PTPREQUEST_CANCELIO_SIZE line = [%d]\n",
+-							__func__, __LINE__);
+-		usb_ep_set_halt(ep);
+-
+-	} else {
+-		memset(dev->cancel_io_buf, 0, USB_PTPREQUEST_CANCELIO_SIZE+1);
+-		memcpy(dev->cancel_io_buf, req->buf,
+-					USB_PTPREQUEST_CANCELIO_SIZE);
+-		dev->cancel_io = 1;
+-		/*Debugging*/
+-		for (i = 0; i < USB_PTPREQUEST_CANCELIO_SIZE; i++)
+-			DEBUG_MTPB("[%s]cancel_io_buf[%d]=%x\tline = [%d]\n",
+-				__func__, i, dev->cancel_io_buf[i], __LINE__);
+-		mtp_send_signal(USB_PTPREQUEST_CANCELIO);
+-	}
+-
+-}
+-
+-static void
+-mtp_complete_get_guid(struct usb_ep *ep, struct usb_request *req)
+-{
+-	int size;
+-
+-	pr_info("[%s]\tline = [%d]\n", __func__, __LINE__);
+-	DEBUG_MTPB("[%s]\tline = [%d]\n", __func__, __LINE__);
+-	if (req->status != 0) {
+-		DEBUG_MTPB("[%s]req->status !=0\tline = [%d]\n",
+-						 __func__, __LINE__);
+-		return;
+-	}
+-
+-	if (req->actual >= sizeof(guid_info))
+-		size = sizeof(guid_info)-1;
+-	else
+-		size = req->actual;
+-	//pr_info("mtp: %s guid = %s\n", __func__, guid_info);
+-	memset(guid_info, 0, sizeof(guid_info));
+-	//pr_info("mtp: %s guid after reset = %s\n", __func__, guid_info);
+-	memcpy(guid_info, req->buf, size);
+-}
+-
+-static int mtp_ctrlrequest(struct usb_composite_dev *cdev,
+-				const struct usb_ctrlrequest *ctrl)
+-{
+-	struct mtpg_dev	*dev = the_mtpg;
+-	struct usb_request	*req = cdev->req;
+-	int signal_request = 0;
+-	int value = -EOPNOTSUPP;
+-	u16			w_index = le16_to_cpu(ctrl->wIndex);
+-	u16			w_value = le16_to_cpu(ctrl->wValue);
+-	u16			w_length = le16_to_cpu(ctrl->wLength);
+-
+-	if (ctrl->bRequestType ==
+-			(USB_DIR_IN | USB_TYPE_STANDARD | USB_RECIP_DEVICE)
+-			&& ctrl->bRequest == USB_REQ_GET_DESCRIPTOR
+-			&& (w_value >> 8) == USB_DT_STRING
+-			&& (w_value & 0xFF) == MTPG_OS_STRING_ID) {
+-		value = (w_length < sizeof(mtpg_os_string)
+-				? w_length : sizeof(mtpg_os_string));
+-		memcpy(cdev->req->buf, mtpg_os_string, value);
+-	if (value >= 0) {
+-		int rc;
+-
+-		cdev->req->zero = value < w_length;
+-		cdev->req->length = value;
+-
+-		rc = usb_ep_queue(cdev->gadget->ep0, cdev->req, GFP_ATOMIC);
+-		if (rc < 0)
+-			pr_info("[%s:%d] setup queue error\n",
+-							__func__, __LINE__);
+-		}
+-		return value;
+-	} else if ((ctrl->bRequestType & USB_TYPE_MASK) == USB_TYPE_VENDOR) {
+-		if ((ctrl->bRequest == 1 || ctrl->bRequest == 0x54 ||
+-			ctrl->bRequest == 0x6F || ctrl->bRequest == 0xFE)
+-				&& (ctrl->bRequestType & USB_DIR_IN)
+-				&& (w_index == 4 || w_index == 5)) {
+-			value = (w_length < sizeof(mtpg_ext_config_desc) ?
+-				w_length : sizeof(mtpg_ext_config_desc));
+-			memcpy(cdev->req->buf, &mtpg_ext_config_desc, value);
+-
+-	if (value >= 0) {
+-		int rc;
+-
+-		cdev->req->zero = value < w_length;
+-		cdev->req->length = value;
+-		rc = usb_ep_queue(cdev->gadget->ep0, cdev->req, GFP_ATOMIC);
+-		if (rc < 0)
+-			pr_info("[%s:%d] setup queue error\n",
+-							__func__, __LINE__);
+-			}
+-			return value;
+-		} else if ((ctrl->bRequest == 0xA3) && (!(ctrl->bRequestType & USB_DIR_IN))) {
+-			pr_info("mtp: [%s] RECEIVE PC GUID / line[%d]\n",
+-						__func__, __LINE__);
+-			value = w_length;
+-			cdev->gadget->ep0->driver_data = dev;
+-			req->complete = mtp_complete_get_guid;
+-			req->zero = 0;
+-			req->length = value;
+-			value = usb_ep_queue(cdev->gadget->ep0,
+-						req, GFP_ATOMIC);
+-			if (value < 0) {
+-				pr_err("[%s:%d]Error usb_ep_queue\n",
+-							__func__, __LINE__);
+-			} else
+-				DEBUG_MTPB("[%s] ep-queue-sucecc line[%d]\n",
+-							__func__, __LINE__);
+-		}
+-		pr_info("mtp: mtp_ctrlrequest "\
+-				"%02x.%02x v%04x i%04x l%u\n",
+-				ctrl->bRequestType, ctrl->bRequest,
+-				w_value, w_index, w_length);
+-	}
+-
+-	switch ((ctrl->bRequestType << 8) | ctrl->bRequest) {
+-	case ((USB_DIR_OUT | USB_TYPE_CLASS | USB_RECIP_INTERFACE) << 8)
+-		| USB_PTPREQUEST_CANCELIO:
+-		DEBUG_MTPB("[%s]\tline=[%d]w_v=%x, w_i=%x, w_l=%x\n",
+-				__func__, __LINE__, w_value, w_index, w_length);
+-		/* if (w_value == 0x00 && w_index ==
+-			mtpg_interface_desc.bInterfaceNumber
+-			&& w_length == 0x06) */
+-		if (w_value == 0x00 && w_length == 0x06) {
+-			DEBUG_MTPB("[%s]PTPREQUESTCANCLIO line[%d]\n",
+-						__func__, __LINE__);
+-			value = w_length;
+-			cdev->gadget->ep0->driver_data = dev;
+-			req->complete = mtp_complete_cancel_io;
+-			req->zero = 0;
+-			req->length = value;
+-			value = usb_ep_queue(cdev->gadget->ep0,
+-						req, GFP_ATOMIC);
+-			if (value < 0) {
+-				pr_err("[%s:%d]Error usb_ep_queue\n",
+-							__func__, __LINE__);
+-			} else
+-				DEBUG_MTPB("[%s] ep-queue-sucecc line[%d]\n",
+-							__func__, __LINE__);
+-		}
+-		return value;
+-		break;
+-
+-	case ((USB_DIR_OUT | USB_TYPE_CLASS | USB_RECIP_INTERFACE) << 8)
+-			| USB_PTPREQUEST_RESET:
+-		DEBUG_MTPB("[%s] USB_PTPREQUEST_RESET\tline = [%d]\n",
+-						 __func__, __LINE__);
+-		signal_request = USB_PTPREQUEST_RESET;
+-		break;
+-
+-	case ((USB_DIR_IN | USB_TYPE_CLASS | USB_RECIP_INTERFACE) << 8)
+-		| USB_PTPREQUEST_GETSTATUS:
+-		signal_request = USB_PTPREQUEST_GETSTATUS;
+-		break;
+-
+-	case ((USB_DIR_IN | USB_TYPE_CLASS | USB_RECIP_INTERFACE) << 8)
+-		| USB_PTPREQUEST_GETEVENT:
+-		signal_request = USB_PTPREQUEST_GETEVENT;
+-		break;
+-
+-	default:
+-		DEBUG_MTPB("[%s] INVALID REQUEST \tline = [%d]\n",
+-							 __func__, __LINE__);
+-		return value;
+-		}
+-
+-	value = mtp_send_signal(signal_request);
+-	return value;
+-}
+-#if 0
+-static int mtp_bind_config(struct usb_configuration *c, bool ptp_config)
+-{
+-	struct mtpg_dev	*mtpg = the_mtpg;
+-	int		status = 0;
+-
+-	if (strings_dev_mtp[F_MTP_IDX].id == 0) {
+-		status = usb_string_id(c->cdev);
+-
+-		if (status < 0)
+-			return status;
+-
+-			strings_dev_mtp[F_MTP_IDX].id = status;
+-			mtpg_interface_desc.iInterface = status;
+-		}
+-
+-	mtpg->cdev = c->cdev;
+-	mtpg->function.name = mtpg_longname;
+-	mtpg->function.strings = mtpg_dev_strings;
+-
+-	/*Test the switch */
+-	if (ptp_config) {
+-		mtpg->function.fs_descriptors = fs_ptp_descs;
+-		mtpg->function.hs_descriptors = hs_ptp_descs;
+-		if (gadget_is_superspeed(c->cdev->gadget))
+-			mtpg->function.ss_descriptors = ss_ptpg_descs;
+-	} else {
+-		mtpg->function.fs_descriptors = fs_mtpg_desc;
+-		mtpg->function.hs_descriptors = hs_mtpg_desc;
+-		if (gadget_is_superspeed(c->cdev->gadget))
+-			mtpg->function.ss_descriptors = ss_mtpg_descs;
+-	}
+-
+-	mtpg->function.bind = mtpg_function_bind;
+-	mtpg->function.unbind = mtpg_function_unbind;
+-	mtpg->function.set_alt = mtpg_function_set_alt;
+-	mtpg->function.disable = mtpg_function_disable;
+-#ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
+-	mtpg->function.set_config_desc = mtp_set_config_desc;
+-#endif
+-
+-	return usb_add_function(c, &mtpg->function);
+-}
+-#endif
+-
+-static int mtp_setup(struct mtp_instance *fi_mtp)
+-{
+-	struct mtpg_dev	*mtpg;
+-	int		rc;
+-	int err;
+-
+-	pr_info("[%s] \tline = [%d]\n", __func__, __LINE__);
+-	memset(guid_info, '0', 1);
+-	mtpg = kzalloc(sizeof(*mtpg), GFP_KERNEL);
+-	if (!mtpg) {
+-		pr_err("mtpg_dev_alloc memory failed\n");
+-		return -ENOMEM;
+-	}
+-
+-	if (fi_mtp != NULL)
+-		fi_mtp->dev = mtpg;
+-
+-	spin_lock_init(&mtpg->lock);
+-	init_waitqueue_head(&mtpg->intr_wq);
+-	init_waitqueue_head(&mtpg->read_wq);
+-	init_waitqueue_head(&mtpg->write_wq);
+-
+-	atomic_set(&mtpg->open_excl, 0);
+-	atomic_set(&mtpg->read_excl, 0);
+-	atomic_set(&mtpg->write_excl, 0);
+-	atomic_set(&mtpg->wintfd_excl, 0);
+-
+-	INIT_LIST_HEAD(&mtpg->rx_idle);
+-	INIT_LIST_HEAD(&mtpg->rx_done);
+-	INIT_LIST_HEAD(&mtpg->tx_idle);
+-	INIT_LIST_HEAD(&mtpg->intr_idle);
+-	mtpg->wq = create_singlethread_workqueue("mtp_read_send");
+-	if (!mtpg->wq) {
+-		pr_err("mtpg_dev_alloc work queue creation failed\n");
+-		rc =  -ENOMEM;
+-		goto err_work;
+-	}
+-
+-	INIT_WORK(&mtpg->read_send_work, read_send_work);
+-
+-	/* the_mtpg must be set before calling usb_gadget_register_driver */
+-	the_mtpg = mtpg;
+-
+-	rc = misc_register(&mtpg_device);
+-	if (rc != 0) {
+-		pr_err(" misc_register of mtpg Failed\n");
+-		goto err_misc_register;
+-	}
+-	err = device_create_file(mtpg_device.this_device, &dev_attr_guid);
+-	if (err) {
+-		pr_info("mtp: %s failed to create guid attr\n",
+-				__func__);
+-		return err;
+-	} else
+-		pr_info("mtp: %s success to create guid attr\n",
+-				__func__);
+-	return 0;
+-err_work:
+-err_misc_register:
+-	the_mtpg = NULL;
+-	kfree(mtpg);
+-	pr_err("mtp gadget driver failed to initialize\n");
+-	return rc;
+-}
+-
+-static void mtp_cleanup(void)
+-{
+-	struct mtpg_dev	*mtpg = the_mtpg;
+-
+-	pr_info("[%s:::%d]\n", __func__, __LINE__);
+-
+-	if (!mtpg)
+-		return;
+-
+-	misc_deregister(&mtpg_device);
+-	the_mtpg = NULL;
+-	kfree(mtpg);
+-}
+-
+-static int mtp_setup_configfs(struct mtp_instance *fi_mtp)
+-{
+-	return mtp_setup(fi_mtp);
+-}
+-
+-static struct mtp_instance *to_mtp_instance(struct config_item *item)
+-{
+-	return container_of(to_config_group(item), struct mtp_instance,
+-		func_inst.group);
+-}
+-
+-static void mtp_attr_release(struct config_item *item)
+-{
+-	struct mtp_instance *fi_mtp = to_mtp_instance(item);
+-
+-	usb_put_function_instance(&fi_mtp->func_inst);
+-}
+-
+-static struct configfs_item_operations mtp_item_ops = {
+-	.release        = mtp_attr_release,
+-};
+-
+-static struct config_item_type mtp_func_type = {
+-	.ct_item_ops    = &mtp_item_ops,
+-	.ct_owner       = THIS_MODULE,
+-};
+-
+-
+-static struct mtp_instance *to_fi_mtp(struct usb_function_instance *fi)
+-{
+-	return container_of(fi, struct mtp_instance, func_inst);
+-}
+-
+-static int mtp_set_inst_name(struct usb_function_instance *fi, const char *name)
+-{
+-	struct mtp_instance *fi_mtp;
+-	char *ptr;
+-	int name_len;
+-
+-	name_len = strlen(name) + 1;
+-	if (name_len > MAX_INST_NAME_LEN)
+-		return -ENAMETOOLONG;
+-
+-	ptr = kstrndup(name, name_len, GFP_KERNEL);
+-	if (!ptr)
+-		return -ENOMEM;
+-
+-	fi_mtp = to_fi_mtp(fi);
+-	fi_mtp->name = ptr;
+-
+-	return 0;
+-}
+-
+-static void mtp_free_inst(struct usb_function_instance *fi)
+-{
+-	struct mtp_instance *fi_mtp;
+-
+-	fi_mtp = to_fi_mtp(fi);
+-	kfree(fi_mtp->name);
+-	mtp_cleanup();
+-	kfree(fi_mtp);
+-}
+-
+-struct usb_function_instance *alloc_inst_mtp_ptp(bool mtp_config)
+-{
+-	struct mtp_instance *fi_mtp;
+-	int ret = 0;
+-	struct usb_os_desc *descs[1];
+-	char *names[1];
+-
+-	fi_mtp = kzalloc(sizeof(*fi_mtp), GFP_KERNEL);
+-	if (!fi_mtp)
+-		return ERR_PTR(-ENOMEM);
+-	fi_mtp->func_inst.set_inst_name = mtp_set_inst_name;
+-	fi_mtp->func_inst.free_func_inst = mtp_free_inst;
+-
+-	fi_mtp->mtp_os_desc.ext_compat_id = fi_mtp->mtp_ext_compat_id;
+-	INIT_LIST_HEAD(&fi_mtp->mtp_os_desc.ext_prop);
+-	descs[0] = &fi_mtp->mtp_os_desc;
+-	names[0] = "MTP";
+-
+-	if (mtp_config) {
+-		ret = mtp_setup_configfs(fi_mtp);
+-		if (ret) {
+-			kfree(fi_mtp);
+-			pr_err("Error setting MTP\n");
+-			return ERR_PTR(ret);
+-		}
+-	} else
+-		fi_mtp->dev = the_mtpg;
+-
+-	config_group_init_type_name(&fi_mtp->func_inst.group,
+-					"", &mtp_func_type);
+-	usb_os_desc_prepare_interf_dir(&fi_mtp->func_inst.group, 1,
+-					descs, names, THIS_MODULE);
+-
+-	return  &fi_mtp->func_inst;
+-}
+-EXPORT_SYMBOL_GPL(alloc_inst_mtp_ptp);
+-
+-static struct usb_function_instance *mtp_alloc_inst(void)
+-{
+-		return alloc_inst_mtp_ptp(true);
+-}
+-
+-static int mtp_ctrlreq_configfs(struct usb_function *f,
+-				const struct usb_ctrlrequest *ctrl)
+-{
+-	return mtp_ctrlrequest(f->config->cdev, ctrl);
+-}
+-
+-static void mtp_free(struct usb_function *f)
+-{
+-	/*NO-OP: no function specific resource allocation in mtp_alloc*/
+-}
+-
+-struct usb_function *function_alloc_mtp_ptp(struct usb_function_instance *fi,
+-					bool mtp_config)
+-{
+-	struct mtp_instance *fi_mtp = to_fi_mtp(fi);
+-	struct mtpg_dev *dev;
+-#ifdef CONFIG_USB_CONFIGFS_UEVENT
+-	struct usb_function *function;
+-#endif
+-
+-	/*
+-	 * PTP piggybacks on MTP function so make sure we have
+-	 * created MTP function before we associate this PTP
+-	 * function with a gadget configuration.
+-	 */
+-	if (fi_mtp->dev == NULL) {
+-		pr_err("Error: Create MTP function before linking PTP function with a gadget configuration\n");
+-		pr_err("\t1: Delete existing PTP function if any\n");
+-		pr_err("\t2: Create MTP function\n");
+-		pr_err("\t3: Create and symlink PTP function with a gadget configuration\n");
+-		return NULL;
+-	}
+-
+-	dev = fi_mtp->dev;
+-#ifdef CONFIG_USB_CONFIGFS_UEVENT
+-	if (mtp_config) {
+-		function = &dev->function;
+-		function->name = mtpg_longname;
+-		function->fs_descriptors = fs_mtpg_desc;
+-		function->hs_descriptors = hs_mtpg_desc;
+-		function->ss_descriptors = ss_mtpg_descs;
+-	} else {
+-		function = &dev->function_ptp;
+-		function->name = DRIVER_NAME_PTP;
+-		function->fs_descriptors = fs_ptp_descs;
+-		function->hs_descriptors = hs_ptp_descs;
+-		function->ss_descriptors = ss_ptpg_descs;
+-	}
+-
+-	function->strings = mtpg_dev_strings;
+-	function->bind = mtpg_function_bind;
+-	function->unbind = mtpg_function_unbind;
+-	function->set_alt = mtpg_function_set_alt;
+-	function->disable = mtpg_function_disable;
+-#ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
+-	function->ctrlrequest = mtp_ctrlreq_configfs;
+-#else
+-	function->setup = mtp_ctrlreq_configfs;
+-#endif
+-	function->free_func = mtp_free;
+-#ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
+-	function->set_config_desc = mtp_set_config_desc;
+-#endif
+-
+-
+-	return function;
+-#else
+-	dev->function.name = mtpg_longname;
+-	dev->function.strings = mtpg_dev_strings;
+-	if (mtp_config) {
+-		dev->function.fs_descriptors = fs_mtpg_desc;
+-		dev->function.hs_descriptors = hs_mtpg_desc;
+-		dev->function.ss_descriptors = ss_mtpg_descs;
+-	} else {
+-		dev->function.fs_descriptors = fs_ptp_descs;
+-		dev->function.hs_descriptors = hs_ptp_descs;
+-		dev->function.ss_descriptors = ss_ptpg_descs;
+-	}
+-	dev->function.bind = mtpg_function_bind;
+-	dev->function.unbind = mtpg_function_unbind;
+-	dev->function.set_alt = mtpg_function_set_alt;
+-	dev->function.disable = mtpg_function_disable;
+-	dev->function.setup = mtp_ctrlreq_configfs;
+-	dev->function.free_func = mtp_free;
+-
+-	return &dev->function;
+-#endif
+-}
+-EXPORT_SYMBOL_GPL(function_alloc_mtp_ptp);
+-
+-static struct usb_function *mtp_alloc(struct usb_function_instance *fi)
+-{
+-	return function_alloc_mtp_ptp(fi, true);
+-}
+-
+-DECLARE_USB_FUNCTION_INIT(mtp, mtp_alloc_inst, mtp_alloc);
+-
+-
+-MODULE_AUTHOR("Deepak And Madhukar");
+-MODULE_LICENSE("GPL");
+diff --git a/include/uapi/drm/sde_drm.h b/include/uapi/drm/sde_drm.h
+index d241a307f4ec..06817d1c754b 100644
+--- a/include/uapi/drm/sde_drm.h
++++ b/include/uapi/drm/sde_drm.h
+@@ -495,4 +495,9 @@ struct sde_drm_roi_misr_v1 {
+ #define SDE_RECOVERY_CAPTURE		1
+ #define SDE_RECOVERY_HARD_RESET		2
+ 
++ /*
++ * sde fod dim layer
++ */
++#define FOD_PRESSED_LAYER_ZORDER 0x20000000u
++
+ #endif /* _SDE_DRM_H_ */
