@@ -1,76 +1,241 @@
+```bash
 #!/usr/bin/env bash
 
 # Copyright (C) 2018 Harsh 'MSF Jarvis' Shandilya
 # Copyright (C) 2018 Akhil Narang
 # SPDX-License-Identifier: GPL-3.0-only
+#
+# Modernized AOSP Build Environment Setup
+#
+# Supported:
+#   Ubuntu 22.04+
+#   Debian 12+
+#
+# Intended for modern AOSP / Android platform builds.
+# Legacy Android versions may require additional packages.
 
-# Script to setup an AOSP Build environment on Ubuntu and Linux Mint
+set -euo pipefail
 
-LATEST_MAKE_VERSION="4.3"
-UBUNTU_16_PACKAGES="libesd0-dev"
-UBUNTU_20_PACKAGES="libncurses5-dev curl python-is-python3"
-DEBIAN_10_PACKAGES="libncurses5-dev"
-DEBIAN_11_PACKAGES="libncurses5-dev"
-PACKAGES=""
+echo "========================================"
+echo "  AOSP Build Environment Setup"
+echo "========================================"
 
-sudo apt install software-properties-common -y
-sudo apt-get install libssl-dev -y
-sudo apt update
+# ------------------------------------------------------------
+# Check OS
+# ------------------------------------------------------------
 
-# Install lsb-base packages
-sudo apt install lsb-base -y
-
-LSB_RELEASE="$(lsb_release -d | cut -d ':' -f 2 | sed -e 's/^[[:space:]]*//')"
-
-if [[ ${LSB_RELEASE} =~ "Mint 18" || ${LSB_RELEASE} =~ "Ubuntu 16" ]]; then
-    PACKAGES="${UBUNTU_16_PACKAGES}"
-elif [[ ${LSB_RELEASE} =~ "Ubuntu 20" || ${LSB_RELEASE} =~ "Ubuntu 21" || ${LSB_RELEASE} =~ "Ubuntu 22" || ${LSB_RELEASE} =~ 'Pop!_OS 2' ]]; then
-    PACKAGES="${UBUNTU_20_PACKAGES}"
-elif [[ ${LSB_RELEASE} =~ "Debian GNU/Linux 10" ]]; then
-    PACKAGES="${DEBIAN_10_PACKAGES}"
-elif [[ ${LSB_RELEASE} =~ "Debian GNU/Linux 11" ]]; then
-    PACKAGES="${DEBIAN_11_PACKAGES}"
+if ! command -v lsb_release >/dev/null 2>&1; then
+    echo "Installing lsb-release..."
+    sudo apt-get update
+    sudo apt-get install -y lsb-release
 fi
 
-sudo DEBIAN_FRONTEND=noninteractive \
-    apt install \
-    adb autoconf automake axel bc bison build-essential \
-    ccache clang cmake curl expat fastboot flex g++ \
-    g++-multilib gawk gcc gcc-multilib git git-lfs gnupg gperf \
-    htop imagemagick lib32ncurses5-dev lib32z1-dev libtinfo5 libc6-dev libcap-dev \
-    libexpat1-dev libgmp-dev '^liblz4-.*' '^liblzma.*' libmpc-dev libmpfr-dev libncurses5-dev \
-    libsdl1.2-dev libssl-dev libtool libxml2 libxml2-utils '^lzma.*' lzop \
-    maven ncftp ncurses-dev patch patchelf pkg-config pngcrush \
-    pngquant python3 re2c schedtool squashfs-tools subversion \
-    texinfo unzip w3m xsltproc zip zlib1g-dev lzip \
-    libxml-simple-perl libswitch-perl apt-utils rsync \
-    ${PACKAGES} -y
+OS_ID="$(. /etc/os-release && echo "${ID}")"
+OS_VERSION="$(. /etc/os-release && echo "${VERSION_ID}")"
 
-sudo ln -s /lib/x86_64-linux-gnu/libncurses.so.6 /lib/x86_64-linux-gnu/libncurses.so.5
-sudo ln -s /lib/x86_64-linux-gnu/libtinfo.so.6 /lib/x86_64-linux-gnu/libtinfo.so.5
+echo "Detected OS: ${OS_ID} ${OS_VERSION}"
 
+case "${OS_ID}" in
+    ubuntu)
+        case "${OS_VERSION}" in
+            22.04|24.04|25.04|25.10|26.04)
+                ;;
+            *)
+                echo "WARNING: Ubuntu ${OS_VERSION} is not specifically tested."
+                echo "Continuing anyway..."
+                ;;
+        esac
+        ;;
 
-echo -e "Installing GitHub CLI"
-curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
-sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
-sudo apt update
-sudo apt install -y gh
+    debian)
+        case "${OS_VERSION}" in
+            12|13)
+                ;;
+            *)
+                echo "WARNING: Debian ${OS_VERSION} is not specifically tested."
+                echo "Continuing anyway..."
+                ;;
+        esac
+        ;;
 
-echo -e "Setting up udev rules for adb!"
-sudo curl --create-dirs -L -o /etc/udev/rules.d/51-android.rules -O -L https://raw.githubusercontent.com/M0Rf30/android-udev-rules/master/51-android.rules
+    *)
+        echo "WARNING: This script was designed for Ubuntu/Debian."
+        echo "Detected: ${OS_ID}"
+        echo "Continuing anyway..."
+        ;;
+esac
+
+# ------------------------------------------------------------
+# Update package repositories
+# ------------------------------------------------------------
+
+echo
+echo "Updating package repositories..."
+
+sudo apt-get update
+
+# ------------------------------------------------------------
+# Base tools
+# ------------------------------------------------------------
+
+echo
+echo "Installing base development tools..."
+
+sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    apt-utils \
+    ca-certificates \
+    software-properties-common \
+    build-essential \
+    git \
+    git-lfs \
+    curl \
+    wget \
+    rsync \
+    unzip \
+    zip \
+    tar \
+    xz-utils \
+    bzip2 \
+    lzip \
+    gzip \
+    patch \
+    pkg-config
+
+# ------------------------------------------------------------
+# AOSP build dependencies
+# ------------------------------------------------------------
+
+echo
+echo "Installing AOSP build dependencies..."
+
+sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    adb \
+    fastboot \
+    autoconf \
+    automake \
+    bc \
+    bison \
+    ccache \
+    clang \
+    cmake \
+    flex \
+    g++ \
+    gawk \
+    gcc \
+    gperf \
+    imagemagick \
+    lib32ncurses-dev \
+    lib32z1-dev \
+    libc6-dev \
+    libcap-dev \
+    libexpat1-dev \
+    libgmp-dev \
+    liblz4-dev \
+    liblzma-dev \
+    libmpc-dev \
+    libmpfr-dev \
+    libncurses-dev \
+    libsdl2-dev \
+    libssl-dev \
+    libtool \
+    libxml2 \
+    libxml2-utils \
+    libxml-simple-perl \
+    libswitch-perl \
+    lzop \
+    maven \
+    ncurses-dev \
+    pngcrush \
+    pngquant \
+    python3 \
+    python3-pip \
+    python3-venv \
+    re2c \
+    schedtool \
+    squashfs-tools \
+    subversion \
+    texinfo \
+    xsltproc \
+    zlib1g-dev
+
+# ------------------------------------------------------------
+# Optional utilities
+# ------------------------------------------------------------
+
+echo
+echo "Installing useful development utilities..."
+
+sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    htop \
+    ncftp \
+    w3m \
+    patchelf \
+    expat \
+    libexpat1-dev
+
+# ------------------------------------------------------------
+# Git LFS
+# ------------------------------------------------------------
+
+echo
+echo "Initializing Git LFS..."
+
+git lfs install
+
+# ------------------------------------------------------------
+# GitHub CLI
+# ------------------------------------------------------------
+
+echo
+echo "Installing GitHub CLI..."
+
+if ! command -v gh >/dev/null 2>&1; then
+    sudo mkdir -p -m 755 /etc/apt/keyrings
+
+    curl -fsSL \
+        https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+        | sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg \
+        > /dev/null
+
+    sudo chmod go+r \
+        /etc/apt/keyrings/githubcli-archive-keyring.gpg
+
+    echo \
+        "deb [arch=$(dpkg --print-architecture) \
+        signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] \
+        https://cli.github.com/packages stable main" \
+        | sudo tee /etc/apt/sources.list.d/github-cli.list \
+        > /dev/null
+
+    sudo apt-get update
+    sudo apt-get install -y gh
+else
+    echo "GitHub CLI already installed."
+fi
+
+# ------------------------------------------------------------
+# Android udev rules
+# ------------------------------------------------------------
+
+echo
+echo "Installing Android udev rules..."
+
+sudo curl -fsSL \
+    -o /etc/udev/rules.d/51-android.rules \
+    https://raw.githubusercontent.com/M0Rf30/android-udev-rules/master/51-android.rules
+
 sudo chmod 644 /etc/udev/rules.d/51-android.rules
-sudo chown root /etc/udev/rules.d/51-android.rules
-sudo systemctl restart udev
+sudo chown root:root /etc/udev/rules.d/51-android.rules
 
-if [[ "$(command -v make)" ]]; then
-    makeversion="$(make -v | head -1 | awk '{print $3}')"
-    if [[ ${makeversion} != "${LATEST_MAKE_VERSION}" ]]; then
-        echo "Installing make ${LATEST_MAKE_VERSION} instead of ${makeversion}"
-        bash "$(dirname "$0")"/make.sh "${LATEST_MAKE_VERSION}"
-    fi
-fi
+sudo udevadm control --reload-rules
+sudo udevadm trigger
 
-echo "Installing repo"
-sudo curl --create-dirs -L -o /usr/local/bin/repo -O -L https://storage.googleapis.com/git-repo-downloads/repo
-sudo chmod a+rx /usr/local/bin/repo
+# ------------------------------------------------------------
+# Configure ccache
+# ------------------------------------------------------------
+
+echo
+echo "Configuring ccache..."
+
+if command
+```
